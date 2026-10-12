@@ -1,0 +1,6 @@
+{
+  "name": "سجل الأصناف وتسعير المنتجات",
+  "description": "منظومة احترافية لإدارة المنتجات، ضبط هوامش الربح وحساب الضرائب لحظياً، وإدارة الأرشيف والتصدير إلى Excel و PDF.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

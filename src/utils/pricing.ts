@@ -1,0 +1,145 @@
+import { Item } from '../types';
+
+export function roundToTwo(num: number): number {
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+}
+
+export function calculatePrices(
+  officialPrice: number,
+  taxRate: number,
+  profitRate: number
+) {
+  const safeOfficial = isNaN(officialPrice) || officialPrice < 0 ? 0 : officialPrice;
+  const safeTaxRate = isNaN(taxRate) ? 0 : taxRate;
+  const safeProfitRate = isNaN(profitRate) ? 0 : profitRate;
+
+  // 1. السعر بالمكسب (قبل الضريبة): السعر الرسمي + نسبة المكسب
+  const priceWithProfit = roundToTwo(safeOfficial * (1 + safeProfitRate / 100));
+
+  // 2. المكسب في القطعة قبل الضريبة: السعر بالمكسب - السعر الرسمي
+  const profitBeforeTax = roundToTwo(priceWithProfit - safeOfficial);
+
+  // 3. السعر بعد الضريبة: يُحسب على السعر بعد وضع السعر بالمكسب (كما طُلب بالتحديد)
+  const priceAfterTax = roundToTwo(priceWithProfit * (1 + safeTaxRate / 100));
+
+  // 4. قيمة الضريبة
+  const taxAmount = roundToTwo(priceAfterTax - priceWithProfit);
+
+  // 5. المكسب في القطعة بعد الضريبة (صافي الربح بعد استقطاع حصة الضريبة)
+  // صافي الربح = المكسب قبل الضريبة - حصة الضريبة من الربح
+  const profitAfterTax = roundToTwo(profitBeforeTax * (1 - safeTaxRate / 100));
+
+  return {
+    officialPrice: safeOfficial,
+    priceWithProfit,
+    priceAfterTax,
+    profitBeforeTax,
+    profitAfterTax,
+    profitPerPiece: profitBeforeTax, // للتوافق العام
+    taxAmount,
+  };
+}
+
+export function recalculateItems(
+  items: Item[],
+  taxRate: number,
+  profitRate: number
+): Item[] {
+  return items.map((item) => {
+    const calculated = calculatePrices(item.officialPrice, taxRate, profitRate);
+    return {
+      ...item,
+      priceWithProfit: calculated.priceWithProfit,
+      priceAfterTax: calculated.priceAfterTax,
+      profitBeforeTax: calculated.profitBeforeTax,
+      profitAfterTax: calculated.profitAfterTax,
+      profitPerPiece: calculated.profitPerPiece,
+      taxAmount: calculated.taxAmount,
+    };
+  });
+}
+
+export function formatCurrency(amount: number, currency: string = 'ج.م'): string {
+  if (isNaN(amount)) return `0.00 ${currency}`;
+  return `${amount.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })} ${currency}`;
+}
+
+export interface FormattedDateTime {
+  dayName: string;
+  dateStr: string;
+  timeStr: string;
+  fullDateArabic: string;
+}
+
+export function formatDateTime(isoString: string): FormattedDateTime {
+  const d = new Date(isoString);
+  if (isNaN(d.getTime())) {
+    return {
+      dayName: 'غير محدد',
+      dateStr: '--',
+      timeStr: '--',
+      fullDateArabic: '--',
+    };
+  }
+
+  const daysArabic = [
+    'الأحد',
+    'الإثنين',
+    'الثلاثاء',
+    'الأربعاء',
+    'الخميس',
+    'الجمعة',
+    'السبت',
+  ];
+
+  const monthsArabic = [
+    'يناير',
+    'فبراير',
+    'مارس',
+    'أبريل',
+    'مايو',
+    'يونيو',
+    'يوليو',
+    'أغسطس',
+    'سبتمبر',
+    'أكتوبر',
+    'نوفمبر',
+    'ديسمبر',
+  ];
+
+  const dayName = daysArabic[d.getDay()];
+  const dateStr = `${d.getDate()} ${monthsArabic[d.getMonth()]} ${d.getFullYear()}`;
+
+  let hours = d.getHours();
+  const minutes = d.getMinutes().toString().padStart(2, '0');
+  const ampm = hours >= 12 ? 'مساءً' : 'صباحاً';
+  hours = hours % 12;
+  hours = hours ? hours : 12; // 0 becomes 12
+  const timeStr = `${hours}:${minutes} ${ampm}`;
+
+  return {
+    dayName,
+    dateStr,
+    timeStr,
+    fullDateArabic: `${dayName}، ${dateStr} - الساعة ${timeStr}`,
+  };
+}
+
+export function generateNextSerialNumber(existingItems: Item[]): string {
+  let maxNum = 0;
+  for (const it of existingItems) {
+    if (!it.serialNumber) continue;
+    const match = it.serialNumber.match(/\d+/);
+    if (match) {
+      const num = parseInt(match[0], 10);
+      if (!isNaN(num) && num > maxNum) {
+        maxNum = num;
+      }
+    }
+  }
+  const nextNum = maxNum + 1;
+  return `SN-${nextNum.toString().padStart(4, '0')}`;
+}
