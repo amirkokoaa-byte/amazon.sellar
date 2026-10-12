@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getDatabase } from 'firebase/database';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDUNg-f1uGoanzMmnaJUdA35xzosJaAnOY",
@@ -14,8 +15,10 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 export const db = getDatabase(app);
+export const storage = getStorage(app);
 
-// Make db available on window as requested
+// Make db and storage available on window
 if (typeof window !== 'undefined') {
-  (window as unknown as { db: typeof db }).db = db;
+  (window as unknown as { db: typeof db; storage: typeof storage }).db = db;
+  (window as unknown as { db: typeof db; storage: typeof storage }).storage = storage;
 }

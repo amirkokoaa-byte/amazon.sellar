@@ -22,7 +22,7 @@ export interface TaxProfitSettings {
   currency: string; // e.g. "ج.م"
 }
 
-export type ActiveTab = 'registry' | 'archive' | 'profits';
+export type ActiveTab = 'registry' | 'archive' | 'invoice' | 'profits';
 
 export const CATEGORIES = [
   'ملابس',

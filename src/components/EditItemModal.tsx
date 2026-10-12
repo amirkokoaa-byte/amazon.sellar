@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, UploadCloud, Trash2 } from 'lucide-react';
+import { X, UploadCloud, Trash2, Loader2 } from 'lucide-react';
 import { CATEGORIES, Item, TaxProfitSettings } from '../types';
 import { calculatePrices, formatCurrency } from '../utils/pricing';
+import { uploadProductImage } from '../utils/imageUpload';
 
 interface EditItemModalProps {
   isOpen: boolean;
@@ -23,7 +24,10 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
   const [sku, setSku] = useState('');
   const [name, setName] = useState('');
   const [officialPriceStr, setOfficialPriceStr] = useState<string>('');
+  
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
 
   useEffect(() => {
     if (item) {
@@ -33,6 +37,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
       setName(item.name);
       setOfficialPriceStr(item.officialPrice.toString());
       setImagePreview(item.imageUrl || null);
+      setSelectedFile(null);
     }
   }, [item]);
 
@@ -55,46 +60,19 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert('حجم الصورة كبير، يرجى اختيار صورة أقل من 2 ميجابايت.');
+      if (file.size > 20 * 1024 * 1024) {
+        alert('حجم الصورة كبير جداً، يرجى اختيار صورة أقل من 20 ميجابايت.');
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const rawBase64 = reader.result as string;
-        const img = new Image();
-        img.onload = () => {
-          const maxDim = 500;
-          let { width, height } = img;
-          if (width > maxDim || height > maxDim) {
-            if (width > height) {
-              height = Math.round((height * maxDim) / width);
-              width = maxDim;
-            } else {
-              width = Math.round((width * maxDim) / height);
-              height = maxDim;
-            }
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height);
-            const compressed = canvas.toDataURL('image/jpeg', 0.75);
-            setImagePreview(compressed);
-          } else {
-            setImagePreview(rawBase64);
-          }
-        };
-        img.src = rawBase64;
-      };
-      reader.readAsDataURL(file);
+      setSelectedFile(file);
+      setImagePreview(URL.createObjectURL(file));
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isUploading) return;
+
     if (!name.trim()) {
       alert('يرجى كتابة اسم الصنف');
       return;
@@ -102,6 +80,22 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
     if (isNaN(parsedOfficialPrice) || parsedOfficialPrice <= 0) {
       alert('يرجى إدخال السعر الرسمي بشكل صحيح');
       return;
+    }
+
+    let finalImageUrl = imagePreview || undefined;
+
+    // رفع الصورة الجديدة إلى Firebase Storage إذا تم اختيار ملف جديد
+    if (selectedFile) {
+      setIsUploading(true);
+      try {
+        finalImageUrl = await uploadProductImage(selectedFile);
+      } catch (err) {
+        console.error('Error uploading image to Firebase Storage:', err);
+        alert('حدث خطأ أثناء رفع الصورة إلى Firebase Storage. يرجى التحقق من الاتصال.');
+        setIsUploading(false);
+        return;
+      }
+      setIsUploading(false);
     }
 
     onUpdateItem({
@@ -117,7 +111,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
       profitAfterTax,
       profitPerPiece,
       taxAmount,
-      imageUrl: imagePreview || undefined,
+      imageUrl: finalImageUrl,
     });
     onClose();
   };
@@ -139,36 +133,35 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
             type="button"
             onClick={onClose}
             className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors shadow-2xs"
-            title="إغلاق الشاشة"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
           {/* Row 1 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-2 sm:gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              <label className="block text-2xs sm:text-xs font-bold text-slate-700 mb-1">
                 رقم المسلسل
               </label>
               <input
                 type="text"
                 value={serialNumber}
                 onChange={(e) => setSerialNumber(e.target.value)}
-                className="w-full bg-white border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 rounded-xl px-3.5 py-2.5 text-slate-800 font-mono font-bold"
+                className="w-full bg-white border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 rounded-xl px-2.5 sm:px-3.5 py-2 text-slate-800 font-mono font-bold text-xs sm:text-sm"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              <label className="block text-2xs sm:text-xs font-bold text-slate-700 mb-1">
                 القسم
               </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full bg-white border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 rounded-xl px-3.5 py-2.5 text-slate-800 font-medium"
+                className="w-full bg-white border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 rounded-xl px-2.5 sm:px-3.5 py-2 text-slate-800 font-medium text-xs sm:text-sm"
               >
                 {CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>
@@ -180,21 +173,21 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
           </div>
 
           {/* Row 2 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              <label className="block text-2xs sm:text-xs font-bold text-slate-700 mb-1">
                 كود المنتج (SKU)
               </label>
               <input
                 type="text"
                 value={sku}
                 onChange={(e) => setSku(e.target.value)}
-                className="w-full bg-white border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 rounded-xl px-3.5 py-2.5 text-slate-800 font-mono"
+                className="w-full bg-white border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 rounded-xl px-3 py-2 text-slate-800 font-mono text-xs sm:text-sm"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              <label className="block text-2xs sm:text-xs font-bold text-slate-700 mb-1">
                 اسم الصنف
               </label>
               <input
@@ -202,15 +195,15 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-white border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 rounded-xl px-3.5 py-2.5 text-slate-800"
+                className="w-full bg-white border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 rounded-xl px-3 py-2 text-slate-800 text-xs sm:text-sm"
               />
             </div>
           </div>
 
           {/* Pricing */}
-          <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5 space-y-4">
+          <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 sm:p-5 space-y-3 sm:space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              <label className="block text-2xs sm:text-xs font-bold text-slate-700 mb-1">
                 السعر الرسمي ({settings.currency})
               </label>
               <input
@@ -220,7 +213,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
                 required
                 value={officialPriceStr}
                 onChange={(e) => setOfficialPriceStr(e.target.value)}
-                className="w-full bg-white border border-emerald-500/80 focus:ring-3 focus:ring-emerald-200 rounded-xl px-4 py-2.5 text-slate-900 font-mono font-bold text-lg"
+                className="w-full bg-white border border-emerald-500/80 focus:ring-3 focus:ring-emerald-200 rounded-xl px-3.5 py-2 text-slate-900 font-mono font-bold text-base sm:text-lg"
               />
             </div>
 
@@ -260,19 +253,27 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 
           {/* Image */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              صورة المنتج
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-2xs sm:text-xs font-bold text-slate-700">
+                صورة المنتج (Firebase Storage)
+              </label>
+              <span className="text-3xs text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full font-semibold">
+                ضغط تلقائي &lt; 300KB
+              </span>
+            </div>
             {imagePreview ? (
               <div className="relative inline-block border border-slate-200 rounded-xl p-2 bg-slate-50">
                 <img
                   src={imagePreview}
                   alt="معاينة المنتج"
-                  className="w-24 h-24 object-cover rounded-lg"
+                  className="w-24 h-24 sm:w-28 sm:h-28 object-cover rounded-lg"
                 />
                 <button
                   type="button"
-                  onClick={() => setImagePreview(null)}
+                  onClick={() => {
+                    setImagePreview(null);
+                    setSelectedFile(null);
+                  }}
                   className="absolute -top-2 -left-2 bg-rose-600 text-white rounded-full p-1 shadow hover:bg-rose-700 transition-colors"
                   title="حذف الصورة"
                 >
@@ -281,9 +282,12 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
               </div>
             ) : (
               <label className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer bg-slate-50/50 hover:bg-emerald-50/20 transition-all">
-                <UploadCloud className="w-8 h-8 text-slate-400 mb-2" />
+                <UploadCloud className="w-7 h-7 sm:w-8 sm:h-8 text-slate-400 mb-1.5" />
                 <span className="text-xs font-bold text-slate-700">
                   اضغط لرفع صورة جديدة
+                </span>
+                <span className="text-3xs sm:text-2xs text-slate-400 mt-0.5 text-center">
+                  تُرفع إلى مجلد /products_images ويُحفظ رابط URL فقط
                 </span>
                 <input
                   type="file"
@@ -300,15 +304,24 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
             <button
               type="button"
               onClick={onClose}
+              disabled={isUploading}
               className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 font-bold transition-colors"
             >
               إلغاء
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold shadow-sm shadow-emerald-200 transition-all"
+              disabled={isUploading}
+              className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:bg-emerald-400 text-white font-bold shadow-sm shadow-emerald-200 transition-all flex items-center justify-center gap-2"
             >
-              حفظ التعديلات في السحابة
+              {isUploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>جارٍ الرفع والتحديث...</span>
+                </>
+              ) : (
+                <span>حفظ التعديلات في السحابة</span>
+              )}
             </button>
           </div>
         </form>

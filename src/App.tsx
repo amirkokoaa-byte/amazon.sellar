@@ -19,6 +19,7 @@ import { Sidebar } from './components/Sidebar';
 import { ItemsTable } from './components/ItemsTable';
 import { ArchiveTable } from './components/ArchiveTable';
 import { ProfitsView } from './components/ProfitsView';
+import { InvoiceView } from './components/InvoiceView';
 import { AddItemModal } from './components/AddItemModal';
 import { EditItemModal } from './components/EditItemModal';
 import { ItemDetailsModal } from './components/ItemDetailsModal';
@@ -352,7 +353,11 @@ export default function App() {
                 <h1 className="text-base sm:text-lg font-bold text-slate-900">
                   {activeTab === 'registry'
                     ? 'سجل الأصناف'
-                    : 'أرشيف المنتجات'}
+                    : activeTab === 'archive'
+                    ? 'أرشيف المنتجات'
+                    : activeTab === 'invoice'
+                    ? 'تسجيل فاتورة'
+                    : 'لوحة التحكم'}
                 </h1>
                 <span className="text-2xs bg-emerald-100/80 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
                   {settings.currency}
@@ -391,57 +396,59 @@ export default function App() {
           </div>
         </header>
 
-        {/* Top KPI Metrics Strip - All in One Single Row */}
-        <div className="px-2.5 sm:px-6 pt-3 sm:pt-5 pb-0">
-          <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
-            {/* 1. المنتجات المسجله (تظهر كاملة بوضوح تام دون اقتطاع أي جزء من الكلمة) */}
-            <div className="bg-white p-2 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between">
-              <span className="text-[11px] sm:text-xs text-slate-600 font-bold block mb-1 leading-snug whitespace-normal break-words">
-                المنتجات المسجله
-              </span>
-              <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-lg font-bold text-slate-900 font-mono">
-                  {totalItemsCount} <span className="text-[10px] sm:text-xs font-normal">صنف</span>
+        {/* Top KPI Metrics Strip - All in One Single Row (تظهر في تبويب السجل والأرشيف) */}
+        {activeTab !== 'invoice' && (
+          <div className="px-2.5 sm:px-6 pt-3 sm:pt-5 pb-0">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
+              {/* 1. المنتجات المسجله (تظهر كاملة بوضوح تام دون اقتطاع أي جزء من الكلمة) */}
+              <div className="bg-white p-2 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+                <span className="text-[11px] sm:text-xs text-slate-600 font-bold block mb-1 leading-snug whitespace-normal break-words">
+                  المنتجات المسجله
                 </span>
-                <div className="hidden sm:flex w-8 h-8 rounded-lg bg-slate-100 text-slate-600 items-center justify-center shrink-0">
-                  <PackageCheck className="w-4 h-4" />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-lg font-bold text-slate-900 font-mono">
+                    {totalItemsCount} <span className="text-[10px] sm:text-xs font-normal">صنف</span>
+                  </span>
+                  <div className="hidden sm:flex w-8 h-8 rounded-lg bg-slate-100 text-slate-600 items-center justify-center shrink-0">
+                    <PackageCheck className="w-4 h-4" />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* 2. إجمالي الأرباح (نسبة الربح فقط على كل منتج مسجل) */}
-            <div className="bg-white p-2 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between">
-              <span className="text-[11px] sm:text-xs text-slate-600 font-bold block mb-1 leading-snug whitespace-normal break-words">
-                إجمالي الأرباح
-              </span>
-              <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-lg font-bold text-emerald-700 font-mono">
-                  +{formatCurrency(totalProfit, settings.currency)}
+              {/* 2. إجمالي الأرباح (نسبة الربح فقط على كل منتج مسجل) */}
+              <div className="bg-white p-2 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+                <span className="text-[11px] sm:text-xs text-slate-600 font-bold block mb-1 leading-snug whitespace-normal break-words">
+                  إجمالي الأرباح
                 </span>
-                <div className="hidden sm:flex w-8 h-8 rounded-lg bg-slate-100 text-slate-600 items-center justify-center shrink-0">
-                  <Coins className="w-4 h-4" />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-lg font-bold text-emerald-700 font-mono">
+                    +{formatCurrency(totalProfit, settings.currency)}
+                  </span>
+                  <div className="hidden sm:flex w-8 h-8 rounded-lg bg-slate-100 text-slate-600 items-center justify-center shrink-0">
+                    <Coins className="w-4 h-4" />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* 3. المبيعات بعد الضريبة (الأساسي + الربح + 14% الضريبة) */}
-            <div className="bg-emerald-50/70 p-2 sm:p-4 rounded-xl sm:rounded-2xl border border-emerald-200/90 shadow-2xs flex flex-col justify-between">
-              <span className="text-[11px] sm:text-xs text-emerald-800 font-bold block mb-1 leading-snug whitespace-normal break-words">
-                المبيعات بعد الضريبة
-              </span>
-              <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-lg font-bold text-emerald-800 font-mono">
-                  {formatCurrency(totalSalesAfterTax, settings.currency)}
+              {/* 3. المبيعات بعد الضريبة (الأساسي + الربح + 14% الضريبة) */}
+              <div className="bg-emerald-50/70 p-2 sm:p-4 rounded-xl sm:rounded-2xl border border-emerald-200/90 shadow-2xs flex flex-col justify-between">
+                <span className="text-[11px] sm:text-xs text-emerald-800 font-bold block mb-1 leading-snug whitespace-normal break-words">
+                  المبيعات بعد الضريبة
                 </span>
-                <div className="hidden sm:flex w-8 h-8 rounded-lg bg-emerald-100/70 text-emerald-700 items-center justify-center shrink-0">
-                  <TrendingUp className="w-4 h-4" />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-lg font-bold text-emerald-800 font-mono">
+                    {formatCurrency(totalSalesAfterTax, settings.currency)}
+                  </span>
+                  <div className="hidden sm:flex w-8 h-8 rounded-lg bg-emerald-100/70 text-emerald-700 items-center justify-center shrink-0">
+                    <TrendingUp className="w-4 h-4" />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Main View: Items Table, Archive, or Profits */}
+        {/* Main View: Items Table, Archive, Invoice, or Profits */}
         <main className="flex-1 p-3 sm:p-6">
           {isLoading ? (
             <div className="p-16 text-center space-y-3">
@@ -469,6 +476,8 @@ export default function App() {
               onViewItemDetails={handleOpenDetails}
               onBackToRegistry={() => setActiveTab('registry')}
             />
+          ) : activeTab === 'invoice' ? (
+            <InvoiceView />
           ) : (
             <ProfitsView
               items={items}

@@ -7,6 +7,7 @@ import {
   PackagePlus,
   Coins,
   ChevronLeft,
+  ReceiptText,
 } from 'lucide-react';
 import { ActiveTab, Item, TaxProfitSettings } from '../types';
 
@@ -152,7 +153,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </span>
           </button>
 
-          {/* 3. إعدادات الضريبة والربح */}
+          {/* 3. تسجيل فاتورة (يفتح النظام مباشرة داخل التطبيق) */}
+          <button
+            onClick={() => {
+              setActiveTab('invoice');
+              onCloseMobile();
+            }}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === 'invoice'
+                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/70 font-bold'
+                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <ReceiptText
+                className={`w-5 h-5 ${
+                  activeTab === 'invoice' ? 'text-emerald-600' : 'text-slate-400'
+                }`}
+              />
+              <span>تسجيل فاتورة</span>
+            </div>
+            <span className="text-2xs bg-emerald-100/80 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+              مباشر
+            </span>
+          </button>
+
+          {/* 4. إعدادات الضريبة والربح */}
           <button
             onClick={() => {
               onOpenSettings();

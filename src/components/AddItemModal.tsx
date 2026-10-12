@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Image as ImageIcon, CheckCircle2, Sparkles, UploadCloud, Trash2 } from 'lucide-react';
+import { X, CheckCircle2, Sparkles, UploadCloud, Trash2, Loader2 } from 'lucide-react';
 import { CATEGORIES, Item, TaxProfitSettings } from '../types';
 import { calculatePrices, formatCurrency, generateNextSerialNumber } from '../utils/pricing';
+import { uploadProductImage } from '../utils/imageUpload';
 
 interface AddItemModalProps {
   isOpen: boolean;
@@ -24,7 +25,11 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   const [sku, setSku] = useState('');
   const [name, setName] = useState('');
   const [officialPriceStr, setOfficialPriceStr] = useState<string>('');
+  
+  // File and preview states
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
 
   // Success toast notice inside modal
   const [showSuccessNotice, setShowSuccessNotice] = useState(false);
@@ -61,56 +66,28 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     setSku(`${catCode}-${randomSuffix}`);
   };
 
-  // Handle image upload with compression for Firebase Realtime DB
+  // Handle image selection
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert('حجم الصورة كبير، يرجى اختيار صورة أقل من 2 ميجابايت.');
+      if (file.size > 20 * 1024 * 1024) {
+        alert('حجم الصورة كبير جداً، يرجى اختيار صورة أصغر من 20 ميجابايت.');
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const rawBase64 = reader.result as string;
-        // Compress using offscreen canvas to keep RTDB node small (~30KB)
-        const img = new Image();
-        img.onload = () => {
-          const maxDim = 500;
-          let { width, height } = img;
-          if (width > maxDim || height > maxDim) {
-            if (width > height) {
-              height = Math.round((height * maxDim) / width);
-              width = maxDim;
-            } else {
-              width = Math.round((width * maxDim) / height);
-              height = maxDim;
-            }
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height);
-            const compressed = canvas.toDataURL('image/jpeg', 0.75);
-            setImagePreview(compressed);
-          } else {
-            setImagePreview(rawBase64);
-          }
-        };
-        img.src = rawBase64;
-      };
-      reader.readAsDataURL(file);
+      setSelectedFile(file);
+      setImagePreview(URL.createObjectURL(file));
     }
   };
 
   const handleClearImage = () => {
+    setSelectedFile(null);
     setImagePreview(null);
   };
 
   // Handle Save
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isUploading) return;
 
     if (!name.trim()) {
       alert('يرجى كتابة اسم الصنف');
@@ -120,6 +97,22 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     if (!officialPriceStr || isNaN(parsedOfficialPrice) || parsedOfficialPrice <= 0) {
       alert('يرجى إدخال السعر الرسمي بشكل صحيح');
       return;
+    }
+
+    let finalImageUrl: string | undefined = undefined;
+
+    // رفع الصورة إلى Firebase Storage بعد الضغط
+    if (selectedFile) {
+      setIsUploading(true);
+      try {
+        finalImageUrl = await uploadProductImage(selectedFile);
+      } catch (err) {
+        console.error('Error uploading image to Firebase Storage:', err);
+        alert('حدث خطأ أثناء رفع الصورة إلى Firebase Storage. يرجى التحقق من الاتصال.');
+        setIsUploading(false);
+        return;
+      }
+      setIsUploading(false);
     }
 
     const newItemData = {
@@ -134,7 +127,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       profitAfterTax,
       profitPerPiece,
       taxAmount,
-      imageUrl: imagePreview || undefined,
+      imageUrl: finalImageUrl,
     };
 
     onSaveItem(newItemData);
@@ -150,6 +143,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     setName('');
     setSku('');
     setOfficialPriceStr('');
+    setSelectedFile(null);
     setImagePreview(null);
     setCategory(CATEGORIES[0]);
 
@@ -162,7 +156,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
       <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+        <div className="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
           <div>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900">
               تسجيل صنف جديد (سحابي)
@@ -183,7 +177,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
+        <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5">
           {/* Success notice when saving consecutively */}
           {showSuccessNotice && (
             <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 text-emerald-800 text-sm animate-fade-in">
@@ -194,7 +188,6 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
             </div>
           )}
 
-          {/* Row 1: Serial number (editable anytime) & Category */}
           {/* Row 1: رقم المسلسل يظهر بجانبه القسم في سطر واحد في نسخة الهاتف دون مسطرة تحريك */}
           <div className="grid grid-cols-2 gap-2 sm:gap-4">
             <div>
@@ -338,11 +331,16 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
             </div>
           </div>
 
-          {/* Image Upload Area */}
+          {/* Image Upload Area via Firebase Storage */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              صورة المنتج (تُحفظ سحابياً بتقنية Base64 خفيفة)
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-2xs sm:text-xs font-bold text-slate-700">
+                رفع الصورة (Firebase Storage)
+              </label>
+              <span className="text-3xs text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full font-semibold">
+                ضغط تلقائي &lt; 300KB
+              </span>
+            </div>
             {imagePreview ? (
               <div className="relative inline-block border border-slate-200 rounded-xl p-2 bg-slate-50">
                 <img
@@ -361,12 +359,12 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               </div>
             ) : (
               <label className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer bg-slate-50/50 hover:bg-emerald-50/20 transition-all">
-                <UploadCloud className="w-8 h-8 text-slate-400 mb-2" />
+                <UploadCloud className="w-7 h-7 sm:w-8 sm:h-8 text-slate-400 mb-1.5" />
                 <span className="text-xs font-bold text-slate-700">
-                  اضغط لرفع صورة المنتج
+                  اضغط لاختيار صورة المنتج
                 </span>
-                <span className="text-2xs text-slate-400 mt-0.5">
-                  تُحفظ وتُزامن سحابياً مع باقي الأجهزة تلقائياً
+                <span className="text-3xs sm:text-2xs text-slate-400 mt-0.5 text-center">
+                  تُرفع إلى مجلد /products_images ويُحفظ رابط URL فقط بقاعدة البيانات
                 </span>
                 <input
                   type="file"
@@ -381,21 +379,30 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
           {/* Modal Footer */}
           <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
             <span className="text-2xs text-slate-400">
-              * عند الضغط على حفظ، يتم حفظ الصنف سحابياً وتفريغ الخانات لتسجيل صنف تالٍ مباشرة.
+              * عند الضغط على حفظ، يتم رفع الصورة وحفظ الصنف وتفريغ الخانات لتسجيل صنف تالٍ مباشرة.
             </span>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={onClose}
+                disabled={isUploading}
                 className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 font-bold transition-colors"
               >
                 إغلاق
               </button>
               <button
                 type="submit"
-                className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold shadow-sm shadow-emerald-200 transition-all"
+                disabled={isUploading}
+                className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:bg-emerald-400 text-white font-bold shadow-sm shadow-emerald-200 transition-all flex items-center justify-center gap-2"
               >
-                حفظ الصنف
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>جارٍ الرفع والحفظ...</span>
+                  </>
+                ) : (
+                  <span>حفظ الصنف</span>
+                )}
               </button>
             </div>
           </div>
