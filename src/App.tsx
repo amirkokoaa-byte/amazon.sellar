@@ -306,15 +306,14 @@ export default function App() {
 
   // KPI calculations
   const totalItemsCount = items.length;
-  // إجمالي الأرباح: محسوب بعد إضافة الضريبة والمكسب
-  const totalWithProfit = items.reduce(
-    (acc, i) => acc + (i.priceWithProfit || 0),
+  // إجمالي الأرباح: عبارة عن قيمة نسبة الربح فقط على كل منتج (المكسب الصافي المقدر قبل الضريبة)
+  const totalProfit = items.reduce(
+    (acc, i) => acc + (i.profitBeforeTax ?? i.profitPerPiece ?? 0),
     0
   );
-  // الأرباح بعد الضريبة: مجموع خانات صافي المكسب بعد استقطاع حصة الضريبة
-  const totalProfitAfterTax = items.reduce(
-    (acc, i) =>
-      acc + (i.profitAfterTax ?? i.profitBeforeTax ?? i.profitPerPiece ?? 0),
+  // المبيعات بعد الضريبة: الأساسي بعد إضافة نسبة الربح وإضافة الـ 14% الضريبة
+  const totalSalesAfterTax = items.reduce(
+    (acc, i) => acc + (i.priceAfterTax || 0),
     0
   );
 
@@ -353,9 +352,7 @@ export default function App() {
                 <h1 className="text-base sm:text-lg font-bold text-slate-900">
                   {activeTab === 'registry'
                     ? 'سجل الأصناف'
-                    : activeTab === 'archive'
-                    ? 'أرشيف المنتجات'
-                    : 'تحليلات الأرباح'}
+                    : 'أرشيف المنتجات'}
                 </h1>
                 <span className="text-2xs bg-emerald-100/80 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
                   {settings.currency}
@@ -412,14 +409,14 @@ export default function App() {
               </div>
             </div>
 
-            {/* 2. إجمالي الأرباح (تظهر كاملة بوضوح تام دون اقتطاع أي جزء من الكلمة) */}
+            {/* 2. إجمالي الأرباح (نسبة الربح فقط على كل منتج مسجل) */}
             <div className="bg-white p-2 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between">
               <span className="text-[11px] sm:text-xs text-slate-600 font-bold block mb-1 leading-snug whitespace-normal break-words">
                 إجمالي الأرباح
               </span>
               <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-lg font-bold text-slate-900 font-mono">
-                  {formatCurrency(totalWithProfit, settings.currency)}
+                <span className="text-xs sm:text-lg font-bold text-emerald-700 font-mono">
+                  +{formatCurrency(totalProfit, settings.currency)}
                 </span>
                 <div className="hidden sm:flex w-8 h-8 rounded-lg bg-slate-100 text-slate-600 items-center justify-center shrink-0">
                   <Coins className="w-4 h-4" />
@@ -427,14 +424,14 @@ export default function App() {
               </div>
             </div>
 
-            {/* 3. الارباح بعد الضريبه (تظهر كاملة بوضوح تام دون اقتطاع أي جزء من الكلمة) */}
+            {/* 3. المبيعات بعد الضريبة (الأساسي + الربح + 14% الضريبة) */}
             <div className="bg-emerald-50/70 p-2 sm:p-4 rounded-xl sm:rounded-2xl border border-emerald-200/90 shadow-2xs flex flex-col justify-between">
               <span className="text-[11px] sm:text-xs text-emerald-800 font-bold block mb-1 leading-snug whitespace-normal break-words">
-                الارباح بعد الضريبه
+                المبيعات بعد الضريبة
               </span>
               <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-lg font-bold text-emerald-700 font-mono">
-                  {formatCurrency(totalProfitAfterTax, settings.currency)}
+                <span className="text-xs sm:text-lg font-bold text-emerald-800 font-mono">
+                  {formatCurrency(totalSalesAfterTax, settings.currency)}
                 </span>
                 <div className="hidden sm:flex w-8 h-8 rounded-lg bg-emerald-100/70 text-emerald-700 items-center justify-center shrink-0">
                   <TrendingUp className="w-4 h-4" />

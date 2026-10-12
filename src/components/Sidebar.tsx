@@ -7,12 +7,8 @@ import {
   PackagePlus,
   Coins,
   ChevronLeft,
-  TrendingUp,
-  BarChart3,
-  Calendar,
 } from 'lucide-react';
 import { ActiveTab, Item, TaxProfitSettings } from '../types';
-import { formatCurrency } from '../utils/pricing';
 
 interface SidebarProps {
   activeTab: ActiveTab;
@@ -32,27 +28,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setActiveTab,
   registryCount,
   archiveCount,
-  items,
   settings,
   onOpenSettings,
   onOpenAddItem,
   isOpenMobile,
   onCloseMobile,
 }) => {
-  // Stats for the Profits section in sidebar
-  const totalOfficialPrice = items.reduce(
-    (sum, i) => sum + (i.officialPrice || 0),
-    0
-  );
-  const totalProfitBeforeTax = items.reduce(
-    (sum, i) => sum + (i.profitBeforeTax ?? i.profitPerPiece ?? 0),
-    0
-  );
-  const totalPriceAfterTax = items.reduce(
-    (sum, i) => sum + (i.priceAfterTax || 0),
-    0
-  );
-
   return (
     <>
       {/* Mobile Backdrop */}
@@ -65,7 +46,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar container */}
       <aside
-        className={`fixed top-0 bottom-0 right-0 z-50 w-76 bg-white border-l border-slate-200 flex flex-col transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 ${
+        className={`fixed top-0 bottom-0 right-0 z-50 w-72 bg-white border-l border-slate-200 flex flex-col transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 ${
           isOpenMobile ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -107,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        {/* Navigation Links */}
+        {/* Navigation Links (تم إخفاء خانة الأرباح من القائمة الجانبية كما طُلب) */}
         <nav className="flex-1 px-3 py-2 space-y-2 overflow-y-auto">
           {/* 1. سجل الأصناف */}
           <button
@@ -171,89 +152,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </span>
           </button>
 
-          {/* 3. اختيار الأرباح في القائمة الجانبية (مع التفاصيل المطلوبة بدقة) */}
-          <div
-            className={`rounded-2xl transition-all border ${
-              activeTab === 'profits'
-                ? 'bg-emerald-50/50 border-emerald-200 shadow-2xs'
-                : 'bg-slate-50/70 border-slate-200/70 hover:bg-slate-50'
-            }`}
-          >
-            {/* الأرباح Header Button */}
-            <button
-              onClick={() => {
-                setActiveTab('profits');
-                onCloseMobile();
-              }}
-              className="w-full flex items-center justify-between px-3.5 py-2.5 text-sm font-bold text-slate-800"
-            >
-              <div className="flex items-center gap-2.5">
-                <TrendingUp
-                  className={`w-5 h-5 ${
-                    activeTab === 'profits' ? 'text-emerald-600' : 'text-slate-500'
-                  }`}
-                />
-                <span>الأرباح</span>
-              </div>
-              <span className="hidden lg:inline-flex text-2xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                تحليلات
-              </span>
-            </button>
-
-            {/* تفاصيل بند الأرباح تظهر على الكمبيوتر وتُخفى على الهاتف لتخفيف القائمة */}
-            <div className="hidden lg:block px-3.5 pb-3 pt-1 space-y-2 text-xs border-t border-slate-200/50">
-              {/* عدد المنتجات المعروضة */}
-              <div className="flex items-center justify-between text-slate-600">
-                <span className="font-medium">عدد المنتجات المعروضة:</span>
-                <span className="font-bold font-mono text-slate-900 bg-white px-2 py-0.5 rounded-md border border-slate-200/60">
-                  {registryCount} صنف
-                </span>
-              </div>
-
-              {/* أسفلها: إجمالي الأسعار الرسمية واجمالي الأرباح قبل الضريبة واجمالي الأسعار بعد الضريبة */}
-              <div className="space-y-1.5 pt-1 text-2xs">
-                {/* إجمالي الأسعار الرسمية */}
-                <div className="flex items-center justify-between text-slate-500">
-                  <span>إجمالي الأسعار الرسمية:</span>
-                  <span className="font-bold font-mono text-slate-700">
-                    {formatCurrency(totalOfficialPrice, settings.currency)}
-                  </span>
-                </div>
-
-                {/* إجمالي الأرباح قبل الضريبة */}
-                <div className="flex items-center justify-between text-teal-700 font-semibold">
-                  <span>إجمالي الأرباح قبل الضريبة:</span>
-                  <span className="font-bold font-mono">
-                    +{formatCurrency(totalProfitBeforeTax, settings.currency)}
-                  </span>
-                </div>
-
-                {/* إجمالي الأسعار بعد الضريبة */}
-                <div className="flex items-center justify-between text-emerald-700 font-semibold">
-                  <span>إجمالي الأسعار بعد الضريبة:</span>
-                  <span className="font-bold font-mono">
-                    {formatCurrency(totalPriceAfterTax, settings.currency)}
-                  </span>
-                </div>
-              </div>
-
-              {/* زر أظهر مسلسل زمني */}
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab('profits');
-                  onCloseMobile();
-                }}
-                className="w-full mt-2 py-2 px-2.5 bg-white hover:bg-emerald-600 text-slate-700 hover:text-white rounded-xl text-2xs font-bold border border-slate-200 hover:border-emerald-600 flex items-center justify-center gap-1.5 shadow-2xs transition-all group"
-                title="عرض المسلسل الزمني لحجم المبيعات (يوم، أسبوع، شهر، سنة)"
-              >
-                <BarChart3 className="w-3.5 h-3.5 text-emerald-600 group-hover:text-white" />
-                <span>أظهر مسلسل زمني (يوم/أسبوع/شهر/سنة)</span>
-              </button>
-            </div>
-          </div>
-
-          {/* 4. إعدادات الضريبة والربح */}
+          {/* 3. إعدادات الضريبة والربح */}
           <button
             onClick={() => {
               onOpenSettings();

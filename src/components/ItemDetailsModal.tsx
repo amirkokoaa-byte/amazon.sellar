@@ -133,7 +133,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
             <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
               تفاصيل التسعير وهوامش الربح والضريبة
             </h4>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {/* Official Price */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
                 <span className="text-2xs text-slate-500 block mb-1">
@@ -171,16 +171,6 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                 </span>
                 <span className="text-sm sm:text-base font-bold text-teal-700 font-mono">
                   +{formatCurrency(profitBefore, settings.currency)}
-                </span>
-              </div>
-
-              {/* Net profit after tax */}
-              <div className="bg-sky-50 border border-sky-200 rounded-xl p-3 text-center col-span-2 sm:col-span-1">
-                <span className="text-2xs text-sky-800 block mb-1 font-semibold">
-                  صافي الربح (بعد الضريبة)
-                </span>
-                <span className="text-sm sm:text-base font-bold text-sky-700 font-mono">
-                  +{formatCurrency(profitAfter, settings.currency)}
                 </span>
               </div>
             </div>

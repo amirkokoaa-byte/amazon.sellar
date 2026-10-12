@@ -70,6 +70,7 @@ export function formatCurrency(amount: number, currency: string = 'ج.م'): stri
 export interface FormattedDateTime {
   dayName: string;
   dateStr: string;
+  numericDateStr: string;
   timeStr: string;
   fullDateArabic: string;
 }
@@ -80,6 +81,7 @@ export function formatDateTime(isoString: string): FormattedDateTime {
     return {
       dayName: 'غير محدد',
       dateStr: '--',
+      numericDateStr: '--/--/----',
       timeStr: '--',
       fullDateArabic: '--',
     };
@@ -112,6 +114,12 @@ export function formatDateTime(isoString: string): FormattedDateTime {
 
   const dayName = daysArabic[d.getDay()];
   const dateStr = `${d.getDate()} ${monthsArabic[d.getMonth()]} ${d.getFullYear()}`;
+  
+  // صيغة التاريخ أرقام فقط (يوم/شهر/سنة مثل 10/10/2026)
+  const day = d.getDate().toString().padStart(2, '0');
+  const month = (d.getMonth() + 1).toString().padStart(2, '0');
+  const year = d.getFullYear();
+  const numericDateStr = `${day}/${month}/${year}`;
 
   let hours = d.getHours();
   const minutes = d.getMinutes().toString().padStart(2, '0');
@@ -123,6 +131,7 @@ export function formatDateTime(isoString: string): FormattedDateTime {
   return {
     dayName,
     dateStr,
+    numericDateStr,
     timeStr,
     fullDateArabic: `${dayName}، ${dateStr} - الساعة ${timeStr}`,
   };

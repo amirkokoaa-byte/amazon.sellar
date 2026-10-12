@@ -332,8 +332,8 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
 
                       {/* بجانبها المسمى وأسفل المسمى السريل والسعر بعد الضريبة */}
                       <div className="flex-1 min-w-0 pr-0.5">
-                        {/* مسمى الصنف */}
-                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate leading-snug mb-1">
+                        {/* مسمى الصنف يظهر كاملاً مهما كان طويلاً دون اقتطاع */}
+                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 leading-snug mb-1 whitespace-normal break-words">
                           {item.name}
                         </h4>
 
@@ -349,15 +349,15 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                         </div>
                       </div>
 
-                      {/* على اليسار: في الأسفل التاريخ الذي تم تسجيل به المنتج، وفي الأعلى المكسب */}
+                      {/* على اليسار: في الأسفل التاريخ أرقام فقط (يوم/شهر/سنة)، وفي الأعلى المكسب */}
                       <div className="shrink-0 text-left pl-0.5 flex flex-col items-end justify-between self-stretch">
                         <span className="text-xs font-bold font-mono text-emerald-700 whitespace-nowrap leading-tight">
                           +{(item.profitBeforeTax ?? item.profitPerPiece ?? 0).toFixed(2)} {settings.currency}
                         </span>
-                        {/* في الأسفل على اليسار: التاريخ الذي تم تسجيل به المنتج */}
-                        <span className="text-3xs text-slate-400 font-mono flex items-center gap-1 mt-1">
-                          <Calendar className="w-3 h-3 text-slate-400" />
-                          <span>{formatDateTime(item.createdAt).dateStr}</span>
+                        {/* في الأسفل على اليسار: التاريخ يوم شهر سنة أرقام فقط (مثال: 10/10/2026) بحجم صغير وواضح */}
+                        <span className="text-3xs sm:text-2xs text-slate-500 font-mono font-semibold flex items-center gap-1 mt-1 tracking-tight">
+                          <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                          <span>{formatDateTime(item.createdAt).numericDateStr}</span>
                         </span>
                       </div>
                     </div>
