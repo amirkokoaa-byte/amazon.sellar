@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, CheckCircle2, Sparkles, UploadCloud, Trash2, Loader2 } from 'lucide-react';
+import { X, CheckCircle2, Sparkles, UploadCloud, Trash2, Loader2, Wand2, Plus } from 'lucide-react';
 import { CATEGORIES, Item, TaxProfitSettings } from '../types';
 import { calculatePrices, formatCurrency, generateNextSerialNumber } from '../utils/pricing';
 import { uploadProductImage } from '../utils/imageUpload';
 import { AiDescriptionModal } from './AiDescriptionModal';
+import { BackgroundIsolationModal, UploadedImageItem } from './BackgroundIsolationModal';
 
 interface AddItemModalProps {
   isOpen: boolean;
@@ -31,10 +32,12 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   );
   const [description, setDescription] = useState<string>('');
   const [isAiModalOpen, setIsAiModalOpen] = useState<boolean>(false);
+  const [isIsolationModalOpen, setIsIsolationModalOpen] = useState<boolean>(false);
   
-  // File and preview states
+  // File and preview states (دعم رفع حتى 3 صور مع الحفاظ التام على التوافق)
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadedImages, setUploadedImages] = useState<UploadedImageItem[]>([]);
   const [isUploading, setIsUploading] = useState<boolean>(false);
 
   // Success toast notice inside modal
@@ -102,22 +105,89 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     }
   };
 
-  // Handle image selection
+  // Handle image selection (دعم اختيار صورة واحدة، اثنتين، أو ثلاث صور)
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 20 * 1024 * 1024) {
-        alert('حجم الصورة كبير جداً، يرجى اختيار صورة أصغر من 20 ميجابايت.');
-        return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newImages: UploadedImageItem[] = [...uploadedImages];
+    for (let i = 0; i < files.length; i++) {
+      if (newImages.length >= 3) break; // أقصى حد 3 صور كما هو مطلوب
+      const file = files[i];
+      if (file.size > 25 * 1024 * 1024) {
+        alert('حجم الصورة كبير جداً، يرجى اختيار صورة أصغر من 25 ميجابايت.');
+        continue;
       }
-      setSelectedFile(file);
-      setImagePreview(URL.createObjectURL(file));
+      newImages.push({
+        id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        file,
+        previewUrl: URL.createObjectURL(file),
+        name: file.name,
+      });
+    }
+
+    setUploadedImages(newImages);
+    if (newImages.length > 0) {
+      setSelectedFile(newImages[0].file || null);
+      setImagePreview(newImages[0].previewUrl);
+    }
+    e.target.value = '';
+  };
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    const updated = uploadedImages.filter((_, idx) => idx !== indexToRemove);
+    setUploadedImages(updated);
+    if (updated.length > 0) {
+      setSelectedFile(updated[0].file || null);
+      setImagePreview(updated[0].previewUrl);
+    } else {
+      setSelectedFile(null);
+      setImagePreview(null);
     }
   };
 
   const handleClearImage = () => {
+    setUploadedImages([]);
     setSelectedFile(null);
     setImagePreview(null);
+  };
+
+  // اعتماد الصورة المعزولة كصورة للمنتج
+  const handleApplyIsolatedImage = (index: number, isolatedDataUrl: string) => {
+    try {
+      const filename = `isolated-${Date.now()}.jpg`;
+      const arr = isolatedDataUrl.split(',');
+      const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      const newFile = new File([u8arr], filename, { type: mime });
+
+      const updated = [...uploadedImages];
+      if (updated[index]) {
+        updated[index] = {
+          ...updated[index],
+          file: newFile,
+          previewUrl: isolatedDataUrl,
+        };
+      } else {
+        updated.push({
+          id: `isolated-${Date.now()}`,
+          file: newFile,
+          previewUrl: isolatedDataUrl,
+          name: filename,
+        });
+      }
+
+      setUploadedImages(updated);
+      setSelectedFile(updated[0]?.file || newFile);
+      setImagePreview(updated[0]?.previewUrl || isolatedDataUrl);
+    } catch (err) {
+      console.error('Error applying isolated image:', err);
+    }
   };
 
   // Handle Save
@@ -185,6 +255,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     setDeliveryFeeStr(settings.deliveryFee ? settings.deliveryFee.toString() : '');
     setSelectedFile(null);
     setImagePreview(null);
+    setUploadedImages([]);
     setCategory(CATEGORIES[0]);
 
     // Generate the next serial number immediately
@@ -410,34 +481,78 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               <label className="text-2xs sm:text-xs font-bold text-slate-700">
                 صورة المنتج
               </label>
+              {uploadedImages.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-3xs text-slate-500 font-mono">
+                    {uploadedImages.length} من 3 صور
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleClearImage}
+                    className="text-3xs text-rose-600 hover:text-rose-700 font-bold hover:underline"
+                  >
+                    حذف الكل
+                  </button>
+                </div>
+              )}
             </div>
-            {imagePreview ? (
-              <div className="relative inline-block border border-slate-200 rounded-xl p-2 bg-slate-50">
-                <img
-                  src={imagePreview}
-                  alt="معاينة المنتج"
-                  className="w-24 h-24 sm:w-28 sm:h-28 object-cover rounded-lg"
-                />
-                <button
-                  type="button"
-                  onClick={handleClearImage}
-                  className="absolute -top-2 -left-2 bg-rose-600 text-white rounded-full p-1 shadow hover:bg-rose-700 transition-colors"
-                  title="حذف الصورة"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+
+            {uploadedImages.length > 0 ? (
+              <div className="flex items-center gap-2.5 flex-wrap">
+                {uploadedImages.map((img, idx) => (
+                  <div
+                    key={img.id || idx}
+                    className="relative border border-slate-200 rounded-xl p-1.5 bg-slate-50 shadow-2xs group"
+                  >
+                    <img
+                      src={img.previewUrl}
+                      alt={`صورة ${idx + 1}`}
+                      className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg"
+                    />
+                    <div className="absolute top-1 right-1 bg-slate-900/60 text-white text-[9px] px-1.5 py-0.2 rounded font-bold backdrop-blur-xs">
+                      {idx + 1}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(idx)}
+                      className="absolute -top-1.5 -left-1.5 bg-rose-600 text-white rounded-full p-1 shadow hover:bg-rose-700 transition-colors"
+                      title="حذف الصورة"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+
+                {/* زر إضافة صورة إضافية إن كان العدد أقل من 3 */}
+                {uploadedImages.length < 3 && (
+                  <label className="w-20 h-20 sm:w-24 sm:h-24 border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl flex flex-col items-center justify-center cursor-pointer bg-slate-50/50 hover:bg-emerald-50/20 transition-all text-center p-1">
+                    <Plus className="w-5 h-5 text-slate-400 mb-0.5" />
+                    <span className="text-[10px] text-slate-600 font-bold">صورة أخرى</span>
+                    <span className="text-[9px] text-slate-400 font-mono">
+                      {uploadedImages.length}/3
+                    </span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
+                  </label>
+                )}
               </div>
             ) : (
               <label className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer bg-slate-50/50 hover:bg-emerald-50/20 transition-all">
                 <UploadCloud className="w-7 h-7 sm:w-8 sm:h-8 text-slate-400 mb-1.5" />
                 <span className="text-xs font-bold text-slate-700">
-                  اضغط لاختيار صورة المنتج
+                  اضغط لاختيار صورة المنتج (1 إلى 3 صور)
                 </span>
                 <span className="text-3xs sm:text-2xs text-slate-400 mt-0.5 text-center">
-                  اختر صورة واضحة للمنتج لتظهر في السجل والتسويق
+                  اختر صورة واضحة للمنتج لتظهر في السجل والتسويق والعزل
                 </span>
                 <input
                   type="file"
+                  multiple
                   accept="image/*"
                   onChange={handleImageChange}
                   className="hidden"
@@ -445,16 +560,30 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               </label>
             )}
 
-            {/* زر أنشئ وصف للمنتج بالذكاء الاصطناعي أسفل اختيار صورة المنتج */}
-            <div className="pt-1">
+            {/* زر أنشئ وصف للمنتج بالذكاء الاصطناعي وبجانبه زر عزل في صف واحد وسطر واحد معاً */}
+            <div className="pt-1 flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setIsAiModalOpen(true)}
-                className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm shadow-emerald-200 flex items-center justify-center gap-2 transition-all"
+                className="flex-1 min-w-0 py-2.5 px-3 sm:px-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-xl text-xs sm:text-sm font-bold shadow-xs flex items-center justify-center gap-1.5 transition-all overflow-hidden"
               >
-                <Sparkles className="w-4 h-4 animate-pulse text-amber-200" />
-                <span>أنشئ وصف للمنتج بالذكاء الاصطناعي</span>
+                <Sparkles className="w-4 h-4 animate-pulse text-amber-200 shrink-0" />
+                <span className="truncate">أنشئ وصف للمنتج بالذكاء الاصطناعي</span>
               </button>
+
+              {/* زر عزل يظهر بجانبه عند رفع صورة منتج في نفس الصف والسطر */}
+              {uploadedImages.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setIsIsolationModalOpen(true)}
+                  className="shrink-0 py-2.5 px-3.5 sm:px-5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-xs flex items-center justify-center gap-1.5 transition-all whitespace-nowrap"
+                  title="عزل خلفية الصورة وجعلها بيضاء بأحدث التقنيات"
+                >
+                  <Wand2 className="w-4 h-4 text-purple-200 shrink-0" />
+                  <span>عزل</span>
+                </button>
+              )}
+            </div>
 
               {/* معاينة سريعة للوصف المحفوظ إن وجد */}
               {description && (
@@ -473,7 +602,6 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                 </div>
               )}
             </div>
-          </div>
 
           {/* Modal Footer */}
           <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -522,6 +650,15 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
         onSaveDescription={(newDesc) => {
           setDescription(newDesc);
         }}
+      />
+
+      {/* شاشة عزل خلفية الصورة المنبثقة بخلفية بيضاء نقية */}
+      <BackgroundIsolationModal
+        isOpen={isIsolationModalOpen}
+        onClose={() => setIsIsolationModalOpen(false)}
+        images={uploadedImages}
+        productName={name}
+        onApplyIsolatedImage={handleApplyIsolatedImage}
       />
     </div>
   );
