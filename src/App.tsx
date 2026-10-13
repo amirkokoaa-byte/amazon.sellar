@@ -9,6 +9,8 @@ import {
   Cloud,
   CheckCircle2,
   RefreshCw,
+  Calendar,
+  Clock,
 } from 'lucide-react';
 import { ref, onValue, set, push, remove, update } from 'firebase/database';
 import { db } from './firebase';
@@ -28,6 +30,8 @@ import { TaxProfitModal } from './components/TaxProfitModal';
 const DEFAULT_SETTINGS: TaxProfitSettings = {
   taxRate: 14,
   profitRate: 25,
+  deliveryFee: 0,
+  siteTitle: 'سجل الأصناف',
   currency: 'ج.م',
 };
 
@@ -57,6 +61,36 @@ export default function App() {
   const [activeItemForDetails, setActiveItemForDetails] = useState<Item | null>(null);
   const [activeItemForEdit, setActiveItemForEdit] = useState<Item | null>(null);
 
+  // 5. Live Clock updated every second (اليوم والتاريخ والساعة نظام 12 ساعة محدث لحظياً)
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDate(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const getLiveClockFormatted = (d: Date) => {
+    const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const dayName = days[d.getDay()];
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const dateStr = `${dd}/${mm}/${yyyy}`;
+
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'م' : 'ص';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const hoursStr = String(hours).padStart(2, '0');
+    const timeStr = `${hoursStr}:${minutes}:${seconds} ${ampm}`;
+    return { dayName, dateStr, timeStr };
+  };
+
+  const liveClock = getLiveClockFormatted(currentDate);
+
   // -------------------------------------------------------------
   // Realtime Firebase Listeners (Read/Sync across all devices)
   // -------------------------------------------------------------
@@ -72,6 +106,8 @@ export default function App() {
           setSettings({
             taxRate: data.taxRate !== undefined ? Number(data.taxRate) : DEFAULT_SETTINGS.taxRate,
             profitRate: data.profitRate !== undefined ? Number(data.profitRate) : DEFAULT_SETTINGS.profitRate,
+            deliveryFee: data.deliveryFee !== undefined ? Number(data.deliveryFee) : DEFAULT_SETTINGS.deliveryFee,
+            siteTitle: data.siteTitle || DEFAULT_SETTINGS.siteTitle,
             currency: data.currency || DEFAULT_SETTINGS.currency,
           });
         } else {
@@ -357,7 +393,7 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <h1 className="text-base sm:text-lg font-bold text-slate-900">
                   {activeTab === 'registry'
-                    ? 'سجل الأصناف'
+                    ? (settings.siteTitle || 'سجل الأصناف')
                     : activeTab === 'archive'
                     ? 'أرشيف المنتجات'
                     : activeTab === 'invoice'
@@ -380,24 +416,19 @@ export default function App() {
             </div>
           </div>
 
-          {/* Quick Header Actions */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <button
-              onClick={() => setIsSettingsOpen(true)}
-              className="p-2 sm:px-3 sm:py-2 text-slate-600 hover:text-emerald-700 hover:bg-slate-100 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors"
-              title="تعديل الضريبة والربح"
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-              <span className="hidden md:inline">الضريبة والربح</span>
-            </button>
-
-            <button
-              onClick={() => setIsAddItemOpen(true)}
-              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-emerald-200 transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>أضف صنف</span>
-            </button>
+          {/* اليوم والتاريخ والساعة محدث لحظياً بنظام 12 ساعة */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 bg-slate-50 border border-slate-200/90 rounded-xl px-2.5 sm:px-3 py-1.5 shadow-2xs">
+            <div className="flex items-center gap-1 text-slate-700 font-bold text-2xs sm:text-xs">
+              <Calendar className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span className="text-emerald-800">{liveClock.dayName}</span>
+              <span className="text-slate-300">•</span>
+              <span className="font-mono text-slate-600">{liveClock.dateStr}</span>
+            </div>
+            <span className="text-slate-300">|</span>
+            <div className="flex items-center gap-1 text-slate-900 font-mono font-bold text-2xs sm:text-xs bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
+              <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span dir="ltr">{liveClock.timeStr}</span>
+            </div>
           </div>
         </header>
 

@@ -13,6 +13,7 @@ import {
   XCircle,
   Package,
   Layers,
+  Sparkles,
 } from 'lucide-react';
 import { Item, TaxProfitSettings } from '../types';
 import { formatCurrency, formatDateTime } from '../utils/pricing';
@@ -242,6 +243,31 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                 </span>
               </div>
             </div>
+
+            {/* Description Section if available */}
+            {item.description && (
+              <div className="mt-4 p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>وصف المنتج التسويقي (الذكاء الاصطناعي):</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(item.description || '');
+                      alert('تم نسخ وصف المنتج بنجاح!');
+                    }}
+                    className="text-2xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-md transition-colors"
+                  >
+                    نسخ الوصف
+                  </button>
+                </div>
+                <p className="text-xs text-slate-700 whitespace-pre-line leading-relaxed font-sans">
+                  {item.description}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

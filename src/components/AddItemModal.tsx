@@ -3,6 +3,7 @@ import { X, CheckCircle2, Sparkles, UploadCloud, Trash2, Loader2 } from 'lucide-
 import { CATEGORIES, Item, TaxProfitSettings } from '../types';
 import { calculatePrices, formatCurrency, generateNextSerialNumber } from '../utils/pricing';
 import { uploadProductImage } from '../utils/imageUpload';
+import { AiDescriptionModal } from './AiDescriptionModal';
 
 interface AddItemModalProps {
   isOpen: boolean;
@@ -28,6 +29,8 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   const [deliveryFeeStr, setDeliveryFeeStr] = useState<string>(
     settings.deliveryFee ? settings.deliveryFee.toString() : ''
   );
+  const [description, setDescription] = useState<string>('');
+  const [isAiModalOpen, setIsAiModalOpen] = useState<boolean>(false);
   
   // File and preview states
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -157,6 +160,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       profitPerPiece,
       taxAmount,
       imageUrl: finalImageUrl,
+      description: description.trim() || undefined,
     };
 
     onSaveItem(newItemData);
@@ -170,6 +174,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
 
     // Reset fields for the next product while keeping the modal open
     setName('');
+    setDescription('');
     setOfficialPriceStr('');
     setDeliveryFeeStr(settings.deliveryFee ? settings.deliveryFee.toString() : '');
     setSelectedFile(null);
@@ -393,15 +398,12 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
             </div>
           </div>
 
-          {/* Image Upload Area via Firebase Storage */}
-          <div>
+          {/* Image Upload Area */}
+          <div className="space-y-2">
             <div className="flex items-center justify-between mb-1">
               <label className="text-2xs sm:text-xs font-bold text-slate-700">
-                رفع الصورة (Firebase Storage)
+                صورة المنتج
               </label>
-              <span className="text-3xs text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full font-semibold">
-                ضغط تلقائي &lt; 300KB
-              </span>
             </div>
             {imagePreview ? (
               <div className="relative inline-block border border-slate-200 rounded-xl p-2 bg-slate-50">
@@ -426,7 +428,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                   اضغط لاختيار صورة المنتج
                 </span>
                 <span className="text-3xs sm:text-2xs text-slate-400 mt-0.5 text-center">
-                  تُرفع إلى مجلد /products_images ويُحفظ رابط URL فقط بقاعدة البيانات
+                  اختر صورة واضحة للمنتج لتظهر في السجل والتسويق
                 </span>
                 <input
                   type="file"
@@ -436,6 +438,35 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                 />
               </label>
             )}
+
+            {/* زر أنشئ وصف للمنتج بالذكاء الاصطناعي أسفل اختيار صورة المنتج */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => setIsAiModalOpen(true)}
+                className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm shadow-emerald-200 flex items-center justify-center gap-2 transition-all"
+              >
+                <Sparkles className="w-4 h-4 animate-pulse text-amber-200" />
+                <span>أنشئ وصف للمنتج بالذكاء الاصطناعي</span>
+              </button>
+
+              {/* معاينة سريعة للوصف المحفوظ إن وجد */}
+              {description && (
+                <div className="mt-2 p-2.5 bg-emerald-50/80 border border-emerald-200 rounded-xl flex items-start justify-between gap-2">
+                  <div className="text-2xs text-emerald-900 leading-relaxed line-clamp-2">
+                    <span className="font-bold block mb-0.5 text-emerald-800">الوصف المحفوظ:</span>
+                    {description}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsAiModalOpen(true)}
+                    className="text-2xs font-bold text-emerald-700 hover:underline shrink-0"
+                  >
+                    تعديل
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Modal Footer */}
@@ -470,6 +501,22 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
           </div>
         </form>
       </div>
+
+      {/* شاشة إنشاء وصف للمنتج بالذكاء الاصطناعي المنبثقة */}
+      <AiDescriptionModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        productName={name}
+        productImage={imagePreview}
+        category={category}
+        officialPrice={parsedOfficialPrice}
+        priceAfterTax={priceAfterTax}
+        currency={settings.currency}
+        initialDescription={description}
+        onSaveDescription={(newDesc) => {
+          setDescription(newDesc);
+        }}
+      />
     </div>
   );
 };

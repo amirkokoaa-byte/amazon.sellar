@@ -12,6 +12,7 @@ export interface Item {
   profitPerPiece: number; // المكسب في القطعة (للتوافق)
   taxAmount?: number; // قيمة الضريبة
   imageUrl?: string;
+  description?: string; // وصف المنتج (المولد بالذكاء الاصطناعي أو مخصص)
   deliveryFee?: number; // رسوم التوصيل
   isAvailable?: boolean; // حالة التوفر (متاح / غير متاح)
   stockQuantity?: number; // عدد القطع المتاحة عند التفعيل
@@ -23,6 +24,7 @@ export interface TaxProfitSettings {
   taxRate: number; // e.g. 14 (%)
   profitRate: number; // e.g. 25 (%)
   deliveryFee?: number; // رسوم التوصيل الافتراضية
+  siteTitle?: string; // عنوان الموقع بالأعلى (سجل الأصناف ج.م)
   currency: string; // e.g. "ج.م"
 }
 
