@@ -187,9 +187,6 @@ export const ArchiveTable: React.FC<ArchiveTableProps> = ({
                     <span className="text-xs font-bold font-mono text-emerald-700 whitespace-nowrap leading-none block">
                       +{(item.profitBeforeTax ?? item.profitPerPiece ?? 0).toFixed(2)} {settings.currency}
                     </span>
-                    <span className="text-3xs text-sky-700 block font-mono mt-0.5 whitespace-nowrap">
-                      صافي: {(item.profitAfterTax ?? item.profitBeforeTax ?? item.profitPerPiece ?? 0).toFixed(2)}
-                    </span>
                   </div>
 
                   {/* Restore Button */}
@@ -229,9 +226,6 @@ export const ArchiveTable: React.FC<ArchiveTableProps> = ({
                     </th>
                     <th className="p-3.5 whitespace-nowrap font-mono text-left text-teal-700">
                       قبل الضريبة
-                    </th>
-                    <th className="p-3.5 whitespace-nowrap font-mono text-left text-sky-700">
-                      صافي الربح
                     </th>
                     <th className="p-3.5 whitespace-nowrap text-center">تاريخ الأرشفة</th>
                     <th className="p-3.5 whitespace-nowrap text-center">الإجراءات</th>
@@ -297,11 +291,6 @@ export const ArchiveTable: React.FC<ArchiveTableProps> = ({
                         {/* Profit Before Tax */}
                         <td className="p-3.5 whitespace-nowrap font-mono text-left font-bold text-teal-700">
                           +{(item.profitBeforeTax ?? item.profitPerPiece ?? 0).toFixed(2)}
-                        </td>
-
-                        {/* Net Profit After Tax */}
-                        <td className="p-3.5 whitespace-nowrap font-mono text-left font-bold text-sky-700">
-                          +{(item.profitAfterTax ?? item.profitBeforeTax ?? item.profitPerPiece ?? 0).toFixed(2)}
                         </td>
 
                         <td className="p-3.5 whitespace-nowrap text-center text-xs text-slate-500">

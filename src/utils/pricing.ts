@@ -7,26 +7,29 @@ export function roundToTwo(num: number): number {
 export function calculatePrices(
   officialPrice: number,
   taxRate: number,
-  profitRate: number
+  profitRate: number,
+  deliveryFee: number = 0
 ) {
   const safeOfficial = isNaN(officialPrice) || officialPrice < 0 ? 0 : officialPrice;
   const safeTaxRate = isNaN(taxRate) ? 0 : taxRate;
   const safeProfitRate = isNaN(profitRate) ? 0 : profitRate;
+  const safeDelivery = isNaN(deliveryFee) || deliveryFee < 0 ? 0 : deliveryFee;
 
-  // 1. السعر بالمكسب (قبل الضريبة): السعر الرسمي + نسبة المكسب
+  // 1. السعر بالمكسب (قبل الضريبة): السعر الرسمي + نسبة المكسب (دون رسوم التوصيل)
   const priceWithProfit = roundToTwo(safeOfficial * (1 + safeProfitRate / 100));
 
-  // 2. المكسب في القطعة قبل الضريبة: السعر بالمكسب - السعر الرسمي
+  // 2. المكسب في القطعة قبل الضريبة: السعر بالمكسب - السعر الرسمي (دون رسوم التوصيل)
   const profitBeforeTax = roundToTwo(priceWithProfit - safeOfficial);
 
-  // 3. السعر بعد الضريبة: يُحسب على السعر بعد وضع السعر بالمكسب (كما طُلب بالتحديد)
-  const priceAfterTax = roundToTwo(priceWithProfit * (1 + safeTaxRate / 100));
+  // 3. السعر بعد الضريبة: يُحسب على السعر بالمكسب + رسوم التوصيل لحظياً كما طُلب بالتحديد
+  const priceAfterTax = roundToTwo(
+    (priceWithProfit * (1 + safeTaxRate / 100)) + safeDelivery
+  );
 
   // 4. قيمة الضريبة
-  const taxAmount = roundToTwo(priceAfterTax - priceWithProfit);
+  const taxAmount = roundToTwo(priceWithProfit * (safeTaxRate / 100));
 
-  // 5. المكسب في القطعة بعد الضريبة (صافي الربح بعد استقطاع حصة الضريبة)
-  // صافي الربح = المكسب قبل الضريبة - حصة الضريبة من الربح
+  // 5. المكسب في القطعة بعد الضريبة
   const profitAfterTax = roundToTwo(profitBeforeTax * (1 - safeTaxRate / 100));
 
   return {
@@ -37,18 +40,22 @@ export function calculatePrices(
     profitAfterTax,
     profitPerPiece: profitBeforeTax, // للتوافق العام
     taxAmount,
+    deliveryFee: safeDelivery,
   };
 }
 
 export function recalculateItems(
   items: Item[],
   taxRate: number,
-  profitRate: number
+  profitRate: number,
+  defaultDeliveryFee: number = 0
 ): Item[] {
   return items.map((item) => {
-    const calculated = calculatePrices(item.officialPrice, taxRate, profitRate);
+    const delivery = item.deliveryFee !== undefined ? item.deliveryFee : defaultDeliveryFee;
+    const calculated = calculatePrices(item.officialPrice, taxRate, profitRate, delivery);
     return {
       ...item,
+      deliveryFee: delivery,
       priceWithProfit: calculated.priceWithProfit,
       priceAfterTax: calculated.priceAfterTax,
       profitBeforeTax: calculated.profitBeforeTax,

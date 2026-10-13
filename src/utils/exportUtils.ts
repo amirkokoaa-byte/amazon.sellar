@@ -14,7 +14,6 @@ export function exportToExcel(
   const exportData = items.map((item, index) => {
     const dt = formatDateTime(item.createdAt);
     const profitBefore = item.profitBeforeTax ?? item.profitPerPiece ?? 0;
-    const profitAfter = item.profitAfterTax ?? profitBefore;
     return {
       'م': index + 1,
       'رقم المسلسل': item.serialNumber,
@@ -25,7 +24,6 @@ export function exportToExcel(
       'السعر بالمكسب (قبل الضريبة)': item.priceWithProfit,
       'السعر بعد الضريبة': item.priceAfterTax,
       'المكسب قبل الضريبة': profitBefore,
-      'صافي المكسب بعد الضريبة': profitAfter,
       'تاريخ التسجيل': `${dt.dayName} ${dt.dateStr} - ${dt.timeStr}`,
     };
   });
@@ -48,7 +46,6 @@ export function exportToExcel(
     { wch: 22 }, // السعر بالمكسب
     { wch: 18 }, // السعر بعد الضريبة
     { wch: 18 }, // المكسب قبل الضريبة
-    { wch: 22 }, // صافي المكسب بعد الضريبة
     { wch: 28 }, // التاريخ
   ];
 
@@ -92,7 +89,6 @@ export function exportToPDF(
     .map((item, idx) => {
       const dt = formatDateTime(item.createdAt);
       const profitBefore = item.profitBeforeTax ?? item.profitPerPiece ?? 0;
-      const profitAfter = item.profitAfterTax ?? profitBefore;
       return `
       <tr style="border-bottom: 1px solid #e2e8f0; ${idx % 2 === 0 ? 'background-color: #f8fafc;' : ''}">
         <td style="padding: 10px 8px; text-align: center; font-weight: bold; color: #475569;">${item.serialNumber}</td>
@@ -103,7 +99,6 @@ export function exportToPDF(
         <td style="padding: 10px 8px; text-align: left; font-family: monospace; font-weight: bold; color: #047857;">${item.priceWithProfit.toFixed(2)}</td>
         <td style="padding: 10px 8px; text-align: left; font-family: monospace;">${item.priceAfterTax.toFixed(2)}</td>
         <td style="padding: 10px 8px; text-align: left; font-family: monospace; font-weight: bold; color: #0d9488;">${profitBefore.toFixed(2)}</td>
-        <td style="padding: 10px 8px; text-align: left; font-family: monospace; font-weight: bold; color: #0284c7;">${profitAfter.toFixed(2)}</td>
         <td style="padding: 10px 8px; text-align: center; font-size: 11px; color: #64748b;">${dt.dateStr}</td>
       </tr>
     `;
@@ -148,7 +143,7 @@ export function exportToPDF(
         }
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(3, 1fr);
           gap: 12px;
           margin-bottom: 24px;
         }
@@ -229,10 +224,6 @@ export function exportToPDF(
           <div class="label">المكسب قبل الضريبة</div>
           <div class="val" style="color: #0d9488;">${totalProfitBefore.toFixed(2)} ${settings.currency}</div>
         </div>
-        <div class="stat-card">
-          <div class="label">صافي المكسب بعد الضريبة</div>
-          <div class="val" style="color: #0284c7;">${totalProfitAfter.toFixed(2)} ${settings.currency}</div>
-        </div>
       </div>
 
       <table>
@@ -246,7 +237,6 @@ export function exportToPDF(
             <th>بالمكسب (${settings.profitRate}%)</th>
             <th>بعد الضريبة (${settings.taxRate}%)</th>
             <th>المكسب قبل الضريبة</th>
-            <th>صافي المكسب بعد الضريبة</th>
             <th>التاريخ</th>
           </tr>
         </thead>
@@ -331,7 +321,7 @@ export function exportSingleItemPDF(
         }
         .price-boxes {
           display: grid;
-          grid-template-columns: repeat(5, 1fr);
+          grid-template-columns: repeat(4, 1fr);
           gap: 10px;
           margin-top: 20px;
         }
@@ -398,10 +388,6 @@ export function exportSingleItemPDF(
           <div class="p-box" style="border-color: #0d9488; background: #f0fdfa;">
             <div class="p-title" style="color: #115e59;">المكسب قبل الضريبة</div>
             <div class="p-num" style="color: #0d9488;">${formatCurrency(profitBefore, settings.currency)}</div>
-          </div>
-          <div class="p-box" style="border-color: #0284c7; background: #f0f9ff;">
-            <div class="p-title" style="color: #0369a1;">صافي المكسب بعد الضريبة</div>
-            <div class="p-num" style="color: #0284c7;">${formatCurrency(profitAfter, settings.currency)}</div>
           </div>
         </div>
 

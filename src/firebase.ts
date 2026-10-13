@@ -16,6 +16,7 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig);
 export const db = getDatabase(app);
 export const storage = getStorage(app);
+export { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 // Make db and storage available on window
 if (typeof window !== 'undefined') {

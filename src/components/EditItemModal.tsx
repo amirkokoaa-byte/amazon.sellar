@@ -24,6 +24,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
   const [sku, setSku] = useState('');
   const [name, setName] = useState('');
   const [officialPriceStr, setOfficialPriceStr] = useState<string>('');
+  const [deliveryFeeStr, setDeliveryFeeStr] = useState<string>('');
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -36,14 +37,20 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
       setSku(item.sku);
       setName(item.name);
       setOfficialPriceStr(item.officialPrice.toString());
+      setDeliveryFeeStr(
+        item.deliveryFee !== undefined
+          ? item.deliveryFee.toString()
+          : (settings.deliveryFee ? settings.deliveryFee.toString() : '')
+      );
       setImagePreview(item.imageUrl || null);
       setSelectedFile(null);
     }
-  }, [item]);
+  }, [item, settings.deliveryFee]);
 
   if (!isOpen || !item) return null;
 
   const parsedOfficialPrice = parseFloat(officialPriceStr) || 0;
+  const parsedDeliveryFee = parseFloat(deliveryFeeStr) || 0;
   const {
     priceWithProfit,
     priceAfterTax,
@@ -54,7 +61,8 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
   } = calculatePrices(
     parsedOfficialPrice,
     settings.taxRate,
-    settings.profitRate
+    settings.profitRate,
+    parsedDeliveryFee
   );
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,6 +113,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
       sku: sku.trim() || item.sku,
       name: name.trim(),
       officialPrice: parsedOfficialPrice,
+      deliveryFee: parsedDeliveryFee,
       priceWithProfit,
       priceAfterTax,
       profitBeforeTax,
@@ -202,19 +211,46 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 
           {/* Pricing */}
           <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 sm:p-5 space-y-3 sm:space-y-4">
-            <div>
-              <label className="block text-2xs sm:text-xs font-bold text-slate-700 mb-1">
-                السعر الرسمي ({settings.currency})
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                required
-                value={officialPriceStr}
-                onChange={(e) => setOfficialPriceStr(e.target.value)}
-                className="w-full bg-white border border-emerald-500/80 focus:ring-3 focus:ring-emerald-200 rounded-xl px-3.5 py-2 text-slate-900 font-mono font-bold text-base sm:text-lg"
-              />
+            <div className="grid grid-cols-2 gap-2 sm:gap-4">
+              <div>
+                <label className="block text-2xs sm:text-xs font-bold text-slate-700 mb-1">
+                  السعر الرسمي ({settings.currency}) <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    value={officialPriceStr}
+                    onChange={(e) => setOfficialPriceStr(e.target.value)}
+                    className="w-full bg-white border border-emerald-500/80 focus:ring-3 focus:ring-emerald-200 rounded-xl px-2.5 sm:px-3.5 py-2 text-slate-900 font-mono font-bold text-sm sm:text-lg"
+                  />
+                  <span className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 text-2xs sm:text-sm text-slate-400 font-medium">
+                    {settings.currency}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-2xs sm:text-xs font-bold text-slate-700 mb-1">
+                  رسوم التوصيل ({settings.currency})
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    value={deliveryFeeStr}
+                    onChange={(e) => setDeliveryFeeStr(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full bg-white border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 rounded-xl px-2.5 sm:px-3.5 py-2 text-slate-900 font-mono font-bold text-sm sm:text-lg"
+                  />
+                  <span className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 text-2xs sm:text-sm text-slate-400 font-medium">
+                    {settings.currency}
+                  </span>
+                </div>
+              </div>
             </div>
 
             {/* الخانات المحسوبة في صف واحد بجانب بعضها:

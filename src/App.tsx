@@ -223,13 +223,18 @@ export default function App() {
   };
 
   // 4. Restore Product -> copy to /products/ID, remove from /archive/ID
-  const handleRestoreItem = async (itemId: string) => {
+  const handleRestoreItem = async (itemId: string, stockQuantity?: number) => {
     const target = archivedItems.find((i) => i.id === itemId);
     if (!target) return;
     try {
       const { id, archivedAt, ...itemData } = target;
+      const dataToRestore = {
+        ...itemData,
+        isAvailable: true,
+        ...(stockQuantity !== undefined ? { stockQuantity } : {}),
+      };
       // 1. Save back to products
-      await set(ref(db, `products/${itemId}`), itemData);
+      await set(ref(db, `products/${itemId}`), dataToRestore);
       // 2. Remove from archive
       await remove(ref(db, `archive/${itemId}`));
     } catch (err) {
@@ -517,11 +522,15 @@ export default function App() {
           setActiveItemForDetails(null);
         }}
         settings={settings}
+        isArchived={archivedItems.some((a) => a.id === activeItemForDetails?.id)}
         onEdit={(itemToEdit) => {
           handleOpenEdit(itemToEdit);
         }}
         onArchive={(itemId) => {
           handleArchiveItem(itemId);
+        }}
+        onRestore={(itemId, stockQty) => {
+          handleRestoreItem(itemId, stockQty);
         }}
         onDelete={(itemId) => {
           handleDeleteItem(itemId);

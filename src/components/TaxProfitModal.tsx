@@ -18,31 +18,30 @@ export const TaxProfitModal: React.FC<TaxProfitModalProps> = ({
 }) => {
   const [taxRate, setTaxRate] = useState<number>(settings.taxRate);
   const [profitRate, setProfitRate] = useState<number>(settings.profitRate);
+  const [deliveryFee, setDeliveryFee] = useState<number>(settings.deliveryFee || 0);
   const [currency, setCurrency] = useState<string>(settings.currency);
 
   useEffect(() => {
     if (isOpen) {
       setTaxRate(settings.taxRate);
       setProfitRate(settings.profitRate);
+      setDeliveryFee(settings.deliveryFee || 0);
       setCurrency(settings.currency);
     }
   }, [isOpen, settings]);
 
   if (!isOpen) return null;
 
-  // Live simulation with sample 100 currency units
-  const sampleOfficial = 100;
-  const sampleCalc = calculatePrices(sampleOfficial, taxRate, profitRate);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (taxRate < 0 || profitRate < 0) {
-      alert('لا يمكن إدخال نسب سالبة');
+    if (taxRate < 0 || profitRate < 0 || deliveryFee < 0) {
+      alert('لا يمكن إدخال نسب أو رسوم سالبة');
       return;
     }
     onSaveSettings({
       taxRate: Number(taxRate),
       profitRate: Number(profitRate),
+      deliveryFee: Number(deliveryFee),
       currency: currency.trim() || 'ج.م',
     });
     onClose();
@@ -121,6 +120,30 @@ export const TaxProfitModal: React.FC<TaxProfitModalProps> = ({
               </div>
               <span className="text-2xs text-slate-400 mt-1 block">
                 تُحسب على السعر بعد وضع السعر بالمكسب لمعرفة صافي الربح
+              </span>
+            </div>
+
+            {/* Delivery Fee Field (رسوم التوصيل) */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                رسوم التوصيل ({currency})
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  value={deliveryFee}
+                  onChange={(e) => setDeliveryFee(parseFloat(e.target.value) || 0)}
+                  placeholder="0.00"
+                  className="w-full bg-white border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 rounded-xl px-4 py-2.5 text-slate-900 font-mono font-bold text-base transition-all"
+                />
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-400 font-bold">
+                  {currency}
+                </span>
+              </div>
+              <span className="text-2xs text-slate-400 mt-1 block">
+                تُضاف لحظياً إلى السعر بعد الضريبة (14%) دون التأثير على السعر بالمكسب أو مكسب القطعة
               </span>
             </div>
 

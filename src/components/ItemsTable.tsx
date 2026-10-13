@@ -370,49 +370,61 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                 DESKTOP VIEW (نسخة الكمبيوتر):
                 الجدول الكامل الغني بجميع الأعمدة والإجراءات السريعة
                ======================================================== */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-right border-collapse">
+            {/* ========================================================
+                DESKTOP VIEW (نسخة الكمبيوتر):
+                سطر واحد بدون مسطرة تحريك أفقية، بدون عمود إجراءات
+                يظهر زر الحذف بالخارج عند تحديد الصنف مع كلمة "تحديد الكل"
+                وإخفاء صافي المكسب بعد الضريبة
+               ======================================================== */}
+            <div className="hidden md:block w-full overflow-hidden">
+              <table className="w-full text-right border-collapse table-auto text-xs sm:text-sm">
                 <thead>
-                  <tr className="bg-slate-50/80 border-b border-slate-200 text-xs font-bold text-slate-600 select-none">
-                    <th className="p-3.5 w-10 text-center">
-                      <button
-                        type="button"
-                        onClick={handleToggleSelectAll}
-                        className="text-slate-400 hover:text-emerald-600 transition-colors"
-                        title={isAllSelected ? 'إلغاء تحديد الكل' : 'تحديد الكل'}
-                      >
-                        {isAllSelected ? (
-                          <CheckSquare className="w-4 h-4 text-emerald-600" />
-                        ) : (
-                          <Square className="w-4 h-4" />
+                  <tr className="bg-slate-50/90 border-b border-slate-200 text-xs font-bold text-slate-700 select-none">
+                    <th className="py-3 px-2 sm:px-3 text-center w-24">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={handleToggleSelectAll}
+                          className="text-slate-400 hover:text-emerald-600 transition-colors"
+                          title={isAllSelected ? 'إلغاء تحديد الكل' : 'تحديد الكل'}
+                        >
+                          {isAllSelected ? (
+                            <CheckSquare className="w-4 h-4 text-emerald-600" />
+                          ) : (
+                            <Square className="w-4 h-4" />
+                          )}
+                        </button>
+                        {selectedItemIds.size > 0 && (
+                          <span
+                            onClick={handleToggleSelectAll}
+                            className="cursor-pointer text-2xs font-bold text-emerald-700 whitespace-nowrap"
+                          >
+                            تحديد الكل
+                          </span>
                         )}
-                      </button>
+                      </div>
                     </th>
-                    <th className="p-3.5 whitespace-nowrap">المسلسل</th>
-                    <th className="p-3.5 whitespace-nowrap">الصورة</th>
-                    <th className="p-3.5 whitespace-nowrap">اسم الصنف</th>
-                    <th className="p-3.5 whitespace-nowrap">القسم</th>
-                    <th className="p-3.5 whitespace-nowrap">كود SKU</th>
-                    <th className="p-3.5 whitespace-nowrap font-mono text-left">
+                    <th className="py-3 px-2 whitespace-nowrap">المسلسل</th>
+                    <th className="py-3 px-2 whitespace-nowrap text-center">الصورة</th>
+                    <th className="py-3 px-2 whitespace-nowrap">اسم الصنف</th>
+                    <th className="py-3 px-2 whitespace-nowrap">القسم</th>
+                    <th className="py-3 px-2 whitespace-nowrap font-mono">كود SKU</th>
+                    <th className="py-3 px-2 whitespace-nowrap font-mono text-left">
                       الرسمي ({settings.currency})
                     </th>
-                    <th className="p-3.5 whitespace-nowrap font-mono text-left text-emerald-700">
+                    <th className="py-3 px-2 whitespace-nowrap font-mono text-left text-emerald-700">
                       بالمكسب ({settings.profitRate}%)
                     </th>
-                    <th className="p-3.5 whitespace-nowrap font-mono text-left">
+                    <th className="py-3 px-2 whitespace-nowrap font-mono text-left">
                       بعد الضريبة ({settings.taxRate}%)
                     </th>
-                    <th className="p-3.5 whitespace-nowrap font-mono text-left text-teal-700">
+                    <th className="py-3 px-2 whitespace-nowrap font-mono text-left text-teal-700">
                       قبل الضريبة
                     </th>
-                    <th className="p-3.5 whitespace-nowrap font-mono text-left text-sky-700">
-                      صافي الربح
-                    </th>
-                    <th className="p-3.5 whitespace-nowrap text-center">التاريخ</th>
-                    <th className="p-3.5 whitespace-nowrap text-center">الإجراءات</th>
+                    <th className="py-3 px-2 whitespace-nowrap text-center">التاريخ</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-sm">
+                <tbody className="divide-y divide-slate-100 text-xs sm:text-sm">
                   {filteredItems.map((item) => {
                     const isSelected = selectedItemIds.has(item.id);
                     const dt = formatDateTime(item.createdAt);
@@ -421,35 +433,50 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                       <tr
                         key={item.id}
                         onClick={() => onViewItemDetails(item)}
-                        className={`cursor-pointer transition-colors hover:bg-emerald-50/40 ${
-                          isSelected ? 'bg-emerald-50/60' : 'bg-white'
+                        className={`cursor-pointer transition-colors hover:bg-emerald-50/50 ${
+                          isSelected ? 'bg-emerald-50/70' : 'bg-white'
                         }`}
                       >
-                        {/* Checkbox */}
+                        {/* التحديد + زر الحذف فقط بالخارج عند تحديد الصنف */}
                         <td
-                          className="p-3.5 text-center"
+                          className="py-2.5 px-2 sm:px-3 text-center whitespace-nowrap"
                           onClick={(e) => handleToggleSelect(item.id, e)}
                         >
-                          <button
-                            type="button"
-                            className="text-slate-400 hover:text-emerald-600 transition-colors"
-                          >
-                            {isSelected ? (
-                              <CheckSquare className="w-4 h-4 text-emerald-600" />
-                            ) : (
-                              <Square className="w-4 h-4" />
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              type="button"
+                              className="text-slate-400 hover:text-emerald-600 transition-colors shrink-0"
+                            >
+                              {isSelected ? (
+                                <CheckSquare className="w-4 h-4 text-emerald-600" />
+                              ) : (
+                                <Square className="w-4 h-4" />
+                              )}
+                            </button>
+                            {isSelected && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDeleteItem(item.id);
+                                }}
+                                className="p-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-md transition-colors shrink-0"
+                                title="حذف هذا الصنف"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             )}
-                          </button>
+                          </div>
                         </td>
 
-                        {/* Serial Number */}
-                        <td className="p-3.5 whitespace-nowrap font-mono font-bold text-xs text-slate-600">
+                        {/* المسلسل */}
+                        <td className="py-2.5 px-2 whitespace-nowrap font-mono font-bold text-2xs text-slate-600">
                           {item.serialNumber}
                         </td>
 
-                        {/* Image Thumbnail */}
-                        <td className="p-3.5 whitespace-nowrap">
-                          <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                        {/* الصورة */}
+                        <td className="py-2.5 px-2 whitespace-nowrap text-center">
+                          <div className="w-9 h-9 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden inline-flex items-center justify-center shrink-0">
                             {item.imageUrl ? (
                               <img
                                 src={item.imageUrl}
@@ -457,92 +484,54 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <Tag className="w-4 h-4 text-slate-300" />
+                              <Tag className="w-3.5 h-3.5 text-slate-300" />
                             )}
                           </div>
                         </td>
 
-                        {/* Name */}
-                        <td className="p-3.5 whitespace-nowrap font-bold text-slate-900 hover:text-emerald-700 transition-colors">
-                          {item.name}
+                        {/* اسم الصنف */}
+                        <td className="py-2.5 px-2 font-bold text-slate-900 hover:text-emerald-700 transition-colors">
+                          <div className="truncate max-w-[180px] sm:max-w-[220px]" title={item.name}>
+                            {item.name}
+                          </div>
                         </td>
 
-                        {/* Category */}
-                        <td className="p-3.5 whitespace-nowrap text-xs text-slate-600">
+                        {/* القسم */}
+                        <td className="py-2.5 px-2 whitespace-nowrap text-2xs text-slate-600">
                           <span className="bg-slate-100 px-2 py-0.5 rounded-md font-medium">
                             {item.category}
                           </span>
                         </td>
 
-                        {/* SKU */}
-                        <td className="p-3.5 whitespace-nowrap font-mono text-xs text-slate-500">
+                        {/* كود SKU */}
+                        <td className="py-2.5 px-2 whitespace-nowrap font-mono text-2xs text-slate-500">
                           {item.sku}
                         </td>
 
-                        {/* Official Price */}
-                        <td className="p-3.5 whitespace-nowrap font-mono text-left font-medium text-slate-700">
+                        {/* السعر الرسمي */}
+                        <td className="py-2.5 px-2 whitespace-nowrap font-mono text-left font-medium text-slate-700">
                           {item.officialPrice.toFixed(2)}
                         </td>
 
-                        {/* Price With Profit */}
-                        <td className="p-3.5 whitespace-nowrap font-mono text-left font-bold text-emerald-700">
+                        {/* السعر بالمكسب */}
+                        <td className="py-2.5 px-2 whitespace-nowrap font-mono text-left font-bold text-emerald-700">
                           {item.priceWithProfit.toFixed(2)}
                         </td>
 
-                        {/* Price After Tax */}
-                        <td className="p-3.5 whitespace-nowrap font-mono text-left font-medium text-slate-700">
+                        {/* السعر بعد الضريبة */}
+                        <td className="py-2.5 px-2 whitespace-nowrap font-mono text-left font-bold text-slate-800">
                           {item.priceAfterTax.toFixed(2)}
                         </td>
 
-                        {/* Profit Before Tax */}
-                        <td className="p-3.5 whitespace-nowrap font-mono text-left font-bold text-teal-700">
+                        {/* المكسب قبل الضريبة */}
+                        <td className="py-2.5 px-2 whitespace-nowrap font-mono text-left font-bold text-teal-700">
                           +{(item.profitBeforeTax ?? item.profitPerPiece ?? 0).toFixed(2)}
                         </td>
 
-                        {/* Net Profit After Tax */}
-                        <td className="p-3.5 whitespace-nowrap font-mono text-left font-bold text-sky-700">
-                          +{(item.profitAfterTax ?? item.profitBeforeTax ?? item.profitPerPiece ?? 0).toFixed(2)}
-                        </td>
-
-                        {/* Date */}
-                        <td className="p-3.5 whitespace-nowrap text-center text-xs text-slate-500">
-                          <div>{dt.dateStr}</div>
-                          <div className="text-2xs text-slate-400">{dt.timeStr}</div>
-                        </td>
-
-                        {/* Actions */}
-                        <td
-                          className="p-3.5 whitespace-nowrap text-center"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => onArchiveItem(item.id)}
-                              className="p-1.5 text-slate-500 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
-                              title="أرشفة الصنف"
-                            >
-                              <Archive className="w-4 h-4" />
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => onEditItem(item)}
-                              className="p-1.5 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
-                              title="تعديل الصنف"
-                            >
-                              <Edit3 className="w-4 h-4" />
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => onDeleteItem(item.id)}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                              title="حذف الصنف"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
+                        {/* التاريخ */}
+                        <td className="py-2.5 px-2 whitespace-nowrap text-center text-2xs text-slate-500">
+                          <div>{dt.numericDateStr}</div>
+                          <div className="text-3xs text-slate-400">{dt.timeStr}</div>
                         </td>
                       </tr>
                     );

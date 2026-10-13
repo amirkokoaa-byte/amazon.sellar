@@ -25,6 +25,9 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   const [sku, setSku] = useState('');
   const [name, setName] = useState('');
   const [officialPriceStr, setOfficialPriceStr] = useState<string>('');
+  const [deliveryFeeStr, setDeliveryFeeStr] = useState<string>(
+    settings.deliveryFee ? settings.deliveryFee.toString() : ''
+  );
   
   // File and preview states
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -35,17 +38,40 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   const [showSuccessNotice, setShowSuccessNotice] = useState(false);
   const [lastSavedName, setLastSavedName] = useState('');
 
-  // Auto-generate serial number on mount/open
+  // نموذج كود SKU التلقائي المحدث لحظياً
+  const categoryPrefixMap: Record<string, string> = {
+    ملابس: 'CLOTH',
+    اكسسوارات: 'ACC',
+    منزل: 'HOME',
+    إلكترونيات: 'ELEC',
+    'مستحضرات تجميل': 'BEAUTY',
+    'أحذية وحقائب': 'BAGS',
+    أخرى: 'GEN',
+  };
+
+  const getAutoSkuModel = (cat: string, ser: string) => {
+    const prefix = categoryPrefixMap[cat] || 'PRD';
+    const num = ser.replace(/\D/g, '') || (existingItems.length + 1).toString();
+    const padNum = num.padStart(3, '0');
+    return `${prefix}-${padNum}`;
+  };
+
+  // Auto-generate serial number & SKU on mount/open
   useEffect(() => {
     if (isOpen) {
-      setSerialNumber(generateNextSerialNumber(existingItems));
+      const nextSerial = generateNextSerialNumber(existingItems);
+      setSerialNumber(nextSerial);
+      setDeliveryFeeStr(settings.deliveryFee ? settings.deliveryFee.toString() : '');
+      const autoSku = getAutoSkuModel(category, nextSerial);
+      setSku(autoSku);
     }
-  }, [isOpen, existingItems]);
+  }, [isOpen, existingItems, settings.deliveryFee]);
 
   if (!isOpen) return null;
 
   // Realtime calculations
   const parsedOfficialPrice = parseFloat(officialPriceStr) || 0;
+  const parsedDeliveryFee = parseFloat(deliveryFeeStr) || 0;
   const {
     priceWithProfit,
     priceAfterTax,
@@ -56,14 +82,15 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   } = calculatePrices(
     parsedOfficialPrice,
     settings.taxRate,
-    settings.profitRate
+    settings.profitRate,
+    parsedDeliveryFee
   );
 
   // Quick SKU suggestion generator
   const handleAutoGenerateSku = () => {
-    const catCode = category.slice(0, 3).toUpperCase();
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    setSku(`${catCode}-${randomSuffix}`);
+    const autoSku = getAutoSkuModel(category, serialNumber);
+    const randomSuffix = Math.floor(100 + Math.random() * 900);
+    setSku(`${autoSku}-${randomSuffix}`);
   };
 
   // Handle image selection
@@ -121,6 +148,8 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       sku: sku.trim() || `SKU-${Date.now().toString().slice(-4)}`,
       name: name.trim(),
       officialPrice: parsedOfficialPrice,
+      deliveryFee: parsedDeliveryFee,
+      isAvailable: true,
       priceWithProfit,
       priceAfterTax,
       profitBeforeTax,
@@ -141,15 +170,17 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
 
     // Reset fields for the next product while keeping the modal open
     setName('');
-    setSku('');
     setOfficialPriceStr('');
+    setDeliveryFeeStr(settings.deliveryFee ? settings.deliveryFee.toString() : '');
     setSelectedFile(null);
     setImagePreview(null);
     setCategory(CATEGORIES[0]);
 
     // Generate the next serial number immediately
     const tempItems = [...existingItems, { ...newItemData, id: 'temp', createdAt: '' }];
-    setSerialNumber(generateNextSerialNumber(tempItems));
+    const nextSer = generateNextSerialNumber(tempItems);
+    setSerialNumber(nextSer);
+    setSku(getAutoSkuModel(CATEGORIES[0], nextSer));
   };
 
   return (
@@ -228,14 +259,23 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                 <label className="text-2xs sm:text-xs font-bold text-slate-700">
                   كود المنتج (SKU)
                 </label>
-                <button
-                  type="button"
-                  onClick={handleAutoGenerateSku}
-                  className="text-2xs text-emerald-600 hover:text-emerald-700 font-bold flex items-center gap-1 hover:underline"
-                >
-                  <Sparkles className="w-3 h-3" />
-                  توليد كود
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="text-3xs bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono font-bold"
+                    title="نموذج كود SKU التلقائي"
+                  >
+                    نموذج: {getAutoSkuModel(category, serialNumber)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleAutoGenerateSku}
+                    className="text-2xs text-emerald-600 hover:text-emerald-700 font-bold flex items-center gap-1 hover:underline"
+                    title="توليد كود SKU جديد"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    تحديث
+                  </button>
+                </div>
               </div>
               <input
                 type="text"
@@ -272,25 +312,47 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               </span>
             </div>
 
-            {/* Official Price Input */}
-            <div>
-              <label className="block text-2xs sm:text-xs font-bold text-slate-700 mb-1">
-                السعر الرسمي (سعر التكلفة) ({settings.currency}) <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  required
-                  value={officialPriceStr}
-                  onChange={(e) => setOfficialPriceStr(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full bg-white border border-emerald-500/80 focus:ring-3 focus:ring-emerald-200 rounded-xl px-3.5 py-2 text-slate-900 font-mono font-bold text-base sm:text-lg transition-all"
-                />
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs sm:text-sm text-slate-400 font-medium">
-                  {settings.currency}
-                </span>
+            {/* صف واحد: السعر الرسمي بجانبه رسوم التوصيل على الهاتف والكمبيوتر */}
+            <div className="grid grid-cols-2 gap-2 sm:gap-4">
+              <div>
+                <label className="block text-2xs sm:text-xs font-bold text-slate-700 mb-1">
+                  السعر الرسمي (التكلفة) ({settings.currency}) <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    value={officialPriceStr}
+                    onChange={(e) => setOfficialPriceStr(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full bg-white border border-emerald-500/80 focus:ring-3 focus:ring-emerald-200 rounded-xl px-2.5 sm:px-3.5 py-2 text-slate-900 font-mono font-bold text-sm sm:text-lg transition-all"
+                  />
+                  <span className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 text-2xs sm:text-sm text-slate-400 font-medium">
+                    {settings.currency}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-2xs sm:text-xs font-bold text-slate-700 mb-1">
+                  رسوم التوصيل ({settings.currency})
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    value={deliveryFeeStr}
+                    onChange={(e) => setDeliveryFeeStr(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full bg-white border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 rounded-xl px-2.5 sm:px-3.5 py-2 text-slate-900 font-mono font-bold text-sm sm:text-lg transition-all"
+                  />
+                  <span className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2 text-2xs sm:text-sm text-slate-400 font-medium">
+                    {settings.currency}
+                  </span>
+                </div>
               </div>
             </div>
 
