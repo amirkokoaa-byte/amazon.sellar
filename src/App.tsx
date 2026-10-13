@@ -378,56 +378,108 @@ export default function App() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
         {/* Top Header Bar */}
-        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-xs border-b border-slate-200 px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between shadow-2xs">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            {/* Mobile Sidebar Hamburger Toggle */}
-            <button
-              onClick={() => setIsMobileSidebarOpen(true)}
-              className="lg:hidden p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
-              title="فتح القائمة"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-bold text-slate-900">
-                  {activeTab === 'registry'
-                    ? (settings.siteTitle || 'سجل الأصناف')
-                    : activeTab === 'archive'
-                    ? 'أرشيف المنتجات'
-                    : activeTab === 'invoice'
-                    ? 'تسجيل فاتورة'
-                    : 'لوحة التحكم'}
-                </h1>
-                <span className="text-2xs bg-emerald-100/80 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
-                  {settings.currency}
-                </span>
-
-                {/* Cloud Sync Live Status Badge */}
-                <div className="hidden xs:flex items-center gap-1 text-3xs font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>سحابي مباشر</span>
+        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-xs border-b border-slate-200 px-3 sm:px-6 py-2 sm:py-3 shadow-2xs">
+          {/* Mobile Header Structure (< sm) */}
+          <div className="sm:hidden flex flex-col gap-1 w-full">
+            {/* السطر الأول: اسم الفرع بالعرض في سطر واحد */}
+            <div className="flex items-center justify-between w-full min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <button
+                  onClick={() => setIsMobileSidebarOpen(true)}
+                  className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
+                  title="فتح القائمة"
+                >
+                  <Menu className="w-5 h-5" />
+                </button>
+                <div className="flex items-center gap-1.5 whitespace-nowrap">
+                  <h1 className="text-sm font-bold text-slate-900 whitespace-nowrap">
+                    {activeTab === 'registry'
+                      ? (settings.siteTitle || 'سجل الأصناف')
+                      : activeTab === 'archive'
+                      ? 'أرشيف المنتجات'
+                      : activeTab === 'invoice'
+                      ? 'تسجيل فاتورة'
+                      : 'لوحة التحكم'}
+                  </h1>
+                  <span className="text-[10px] bg-emerald-100/80 text-emerald-800 px-1.5 py-0.5 rounded-full font-bold shrink-0">
+                    {settings.currency}
+                  </span>
+                  <div className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>سحابي</span>
+                  </div>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 hidden sm:block">
-                الربح: {settings.profitRate}% | الضريبة: {settings.taxRate}% (على السعر بالمكسب)
-              </p>
+            </div>
+
+            {/* السطر الثاني: أسفله على اليسار اليوم والتاريخ والساعة بحجم كامل دون اختفاء أي جزء وتصغير الحجم */}
+            <div className="flex justify-end w-full">
+              <div className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200/90 rounded-lg px-2 py-0.5 shadow-2xs text-[10px]">
+                <div className="flex items-center gap-1 text-slate-700 font-bold">
+                  <Calendar className="w-3 h-3 text-emerald-600 shrink-0" />
+                  <span className="text-emerald-800 whitespace-nowrap">{liveClock.dayName}</span>
+                  <span className="text-slate-300">•</span>
+                  <span className="font-mono text-slate-600 whitespace-nowrap">{liveClock.dateStr}</span>
+                </div>
+                <span className="text-slate-300">|</span>
+                <div className="flex items-center gap-1 text-slate-900 font-mono font-bold bg-white px-1.5 py-0.5 rounded border border-slate-200 shadow-2xs">
+                  <Clock className="w-3 h-3 text-emerald-600 shrink-0" />
+                  <span dir="ltr" className="whitespace-nowrap">{liveClock.timeStr}</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* اليوم والتاريخ والساعة محدث لحظياً بنظام 12 ساعة */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 bg-slate-50 border border-slate-200/90 rounded-xl px-2.5 sm:px-3 py-1.5 shadow-2xs">
-            <div className="flex items-center gap-1 text-slate-700 font-bold text-2xs sm:text-xs">
-              <Calendar className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span className="text-emerald-800">{liveClock.dayName}</span>
-              <span className="text-slate-300">•</span>
-              <span className="font-mono text-slate-600">{liveClock.dateStr}</span>
+          {/* Desktop Header Structure (>= sm) */}
+          <div className="hidden sm:flex items-center justify-between w-full">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <button
+                onClick={() => setIsMobileSidebarOpen(true)}
+                className="lg:hidden p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
+                title="فتح القائمة"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-base sm:text-lg font-bold text-slate-900">
+                    {activeTab === 'registry'
+                      ? (settings.siteTitle || 'سجل الأصناف')
+                      : activeTab === 'archive'
+                      ? 'أرشيف المنتجات'
+                      : activeTab === 'invoice'
+                      ? 'تسجيل فاتورة'
+                      : 'لوحة التحكم'}
+                  </h1>
+                  <span className="text-2xs bg-emerald-100/80 text-emerald-800 px-2 py-0.5 rounded-full font-bold">
+                    {settings.currency}
+                  </span>
+
+                  <div className="flex items-center gap-1 text-3xs font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>سحابي مباشر</span>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500">
+                  الربح: {settings.profitRate}% | الضريبة: {settings.taxRate}% (على السعر بالمكسب)
+                </p>
+              </div>
             </div>
-            <span className="text-slate-300">|</span>
-            <div className="flex items-center gap-1 text-slate-900 font-mono font-bold text-2xs sm:text-xs bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
-              <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span dir="ltr">{liveClock.timeStr}</span>
+
+            {/* اليوم والتاريخ والساعة محدث لحظياً بنظام 12 ساعة */}
+            <div className="flex items-center gap-1.5 sm:gap-2.5 bg-slate-50 border border-slate-200/90 rounded-xl px-2.5 sm:px-3 py-1.5 shadow-2xs">
+              <div className="flex items-center gap-1 text-slate-700 font-bold text-xs">
+                <Calendar className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span className="text-emerald-800">{liveClock.dayName}</span>
+                <span className="text-slate-300">•</span>
+                <span className="font-mono text-slate-600">{liveClock.dateStr}</span>
+              </div>
+              <span className="text-slate-300">|</span>
+              <div className="flex items-center gap-1 text-slate-900 font-mono font-bold text-xs bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
+                <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span dir="ltr">{liveClock.timeStr}</span>
+              </div>
             </div>
           </div>
         </header>

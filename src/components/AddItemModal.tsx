@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, CheckCircle2, Sparkles, UploadCloud, Trash2, Loader2 } from 'lucide-react';
 import { CATEGORIES, Item, TaxProfitSettings } from '../types';
 import { calculatePrices, formatCurrency, generateNextSerialNumber } from '../utils/pricing';
@@ -59,16 +59,18 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     return `${prefix}-${padNum}`;
   };
 
-  // Auto-generate serial number & SKU on mount/open
+  // Auto-generate serial number & SKU only on opening the modal (لا يتم تصفيره أثناء الكتابة)
+  const prevIsOpenRef = useRef(false);
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prevIsOpenRef.current) {
       const nextSerial = generateNextSerialNumber(existingItems);
       setSerialNumber(nextSerial);
       setDeliveryFeeStr(settings.deliveryFee ? settings.deliveryFee.toString() : '');
       const autoSku = getAutoSkuModel(category, nextSerial);
       setSku(autoSku);
     }
-  }, [isOpen, existingItems, settings.deliveryFee]);
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -89,11 +91,15 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     parsedDeliveryFee
   );
 
-  // Quick SKU suggestion generator
+  // Quick SKU suggestion generator - عند الضغط على تحديث يتم تحديثه تلقائياً
   const handleAutoGenerateSku = () => {
     const autoSku = getAutoSkuModel(category, serialNumber);
-    const randomSuffix = Math.floor(100 + Math.random() * 900);
-    setSku(`${autoSku}-${randomSuffix}`);
+    if (sku === autoSku) {
+      const randomSuffix = Math.floor(100 + Math.random() * 900);
+      setSku(`${autoSku}-${randomSuffix}`);
+    } else {
+      setSku(autoSku);
+    }
   };
 
   // Handle image selection
@@ -321,7 +327,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
             <div className="grid grid-cols-2 gap-2 sm:gap-4">
               <div>
                 <label className="block text-2xs sm:text-xs font-bold text-slate-700 mb-1">
-                  السعر الرسمي (التكلفة) ({settings.currency}) <span className="text-rose-500">*</span>
+                  السعر الرسمي <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -342,7 +348,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
 
               <div>
                 <label className="block text-2xs sm:text-xs font-bold text-slate-700 mb-1">
-                  رسوم التوصيل ({settings.currency})
+                  رسوم التوصيل
                 </label>
                 <div className="relative">
                   <input

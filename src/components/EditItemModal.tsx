@@ -219,7 +219,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
             <div className="grid grid-cols-2 gap-2 sm:gap-4">
               <div>
                 <label className="block text-2xs sm:text-xs font-bold text-slate-700 mb-1">
-                  السعر الرسمي ({settings.currency}) <span className="text-rose-500">*</span>
+                  السعر الرسمي <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -239,7 +239,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 
               <div>
                 <label className="block text-2xs sm:text-xs font-bold text-slate-700 mb-1">
-                  رسوم التوصيل ({settings.currency})
+                  رسوم التوصيل
                 </label>
                 <div className="relative">
                   <input
